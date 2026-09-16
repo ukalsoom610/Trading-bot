@@ -1,0 +1,2307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confluence — Market Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-0: #0a0d16;
+  --bg-1: #0f1320;
+  --glass: rgba(255,255,255,0.04);
+  --glass-strong: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.09);
+  --border-soft: rgba(255,255,255,0.05);
+  --text: #eef1f7;
+  --text-dim: #8891a7;
+  --text-dimmer: #545d72;
+
+  --long: #22d88f;
+  --long-glow: rgba(34,216,143,0.35);
+  --long-soft: rgba(34,216,143,0.12);
+  --short: #fb4570;
+  --short-glow: rgba(251,69,112,0.35);
+  --short-soft: rgba(251,69,112,0.12);
+  --accent-a: #7c6df2;
+  --accent-b: #4f9dff;
+  --amber: #ffb648;
+
+  --font-ui: 'Manrope', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 18px;
+  --radius-sm: 11px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; color: var(--text);
+  font-family: var(--font-ui); font-size: 14.5px;
+  background: var(--bg-0);
+  position: relative;
+  overflow-x: hidden;
+}
+body::before, body::after {
+  content: ''; position: fixed; border-radius: 50%; filter: blur(90px);
+  opacity: 0.35; pointer-events: none; z-index: 0;
+}
+body::before {
+  width: 620px; height: 620px; background: radial-gradient(circle, var(--accent-a), transparent 70%);
+  top: -220px; left: -160px;
+}
+body::after {
+  width: 560px; height: 560px; background: radial-gradient(circle, var(--accent-b), transparent 70%);
+  bottom: -200px; right: -140px; opacity: 0.25;
+}
+.layout { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 26px 28px 60px; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 2px 26px;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 15px; color: white;
+  box-shadow: 0 4px 18px rgba(124,109,242,0.45);
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.25; }
+.brand-name { font-weight: 800; font-size: 17px; letter-spacing: -0.01em; }
+.brand-sub { color: var(--text-dim); font-size: 12px; }
+.status-pill {
+  display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600;
+  color: var(--text-dim); background: var(--glass); border: 1px solid var(--border);
+  padding: 7px 14px; border-radius: 100px; backdrop-filter: blur(12px);
+}
+.status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dimmer); transition: all 0.3s; }
+.status-pill.live .dot { background: var(--long); box-shadow: 0 0 10px var(--long-glow); }
+.status-pill.error .dot { background: var(--short); box-shadow: 0 0 10px var(--short-glow); }
+
+.card {
+  background: var(--glass); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 22px 24px; backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  margin-bottom: 20px;
+}
+.card-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 18px;
+}
+.card-head h2 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.card-head .meta { font-size: 12px; color: var(--text-dim); font-weight: 500; }
+
+.field-row { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field label {
+  font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.02em;
+}
+.field label .hint { font-weight: 500; color: var(--text-dimmer); }
+.field select, .field input[type="text"] {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--text);
+  padding: 10px 13px; border-radius: var(--radius-sm); font-family: var(--font-ui);
+  font-size: 13.5px; font-weight: 600; min-width: 128px; outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.field select:focus, .field input:focus { border-color: var(--accent-b); background: rgba(255,255,255,0.05); }
+.field input[type="range"] { width: 150px; accent-color: var(--accent-b); }
+.checkbox-field { flex-direction: row; align-items: center; }
+.checkbox-field label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-dim); font-weight: 500; }
+.checkbox-field input[type="checkbox"] { accent-color: var(--accent-b); width: 15px; height: 15px; }
+
+.btn {
+  border: none; padding: 11px 24px; border-radius: var(--radius-sm);
+  font-family: var(--font-ui); font-weight: 700; font-size: 13.5px; cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.2s, opacity 0.15s;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b)); color: white;
+  box-shadow: 0 6px 20px rgba(124,109,242,0.35);
+}
+.btn-primary:hover { box-shadow: 0 8px 26px rgba(124,109,242,0.5); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+</style>
+<style>
+.btn-secondary { background: var(--glass); border: 1px solid var(--border); color: var(--text); box-shadow: none; }
+.btn-secondary:hover { background: var(--glass-strong); box-shadow: none; }
+
+.mono { font-family: var(--font-mono); }
+
+.exchange-badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
+  border-radius: 100px; font-size: 11px; font-weight: 700; background: var(--glass-strong);
+  border: 1px solid var(--border);
+}
+
+/* ---- Watch + Chart layout ---- */
+.watch-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; align-items: start; }
+.chart-card { padding: 0; overflow: hidden; }
+.chart-card .card-head { padding: 20px 24px 14px; margin-bottom: 0; border: none; }
+#chartContainer { width: 100%; height: 380px; }
+.risk-zone { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 2; transition: opacity 0.2s; }
+.risk-zone.profit { background: rgba(34,216,143,0.10); border-top: 1px dashed rgba(34,216,143,0.5); border-bottom: 1px dashed rgba(34,216,143,0.5); }
+.risk-zone.loss { background: rgba(251,69,112,0.10); border-top: 1px dashed rgba(251,69,112,0.5); border-bottom: 1px dashed rgba(251,69,112,0.5); }
+.risk-zone.entry { background: rgba(79,157,255,0.16); border-top: 1px dashed rgba(79,157,255,0.7); border-bottom: 1px dashed rgba(79,157,255,0.7); z-index: 3; }
+.chart-legend { display: flex; gap: 18px; padding: 12px 24px 18px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--text-dim); }
+.legend-swatch { width: 14px; height: 3px; border-radius: 2px; }
+
+.signal-summary { display: flex; flex-direction: column; gap: 16px; }
+.direction-hero {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px; border-radius: var(--radius-sm);
+  background: var(--glass-strong); border: 1px solid var(--border);
+}
+.direction-hero.long { border-color: rgba(34,216,143,0.35); }
+.direction-hero.short { border-color: rgba(251,69,112,0.35); }
+.direction-hero .dir-text { font-size: 22px; font-weight: 800; font-family: var(--font-ui); }
+.direction-hero.long .dir-text { color: var(--long); }
+.direction-hero.short .dir-text { color: var(--short); }
+.direction-hero .conf-text { font-size: 20px; font-weight: 700; color: var(--amber); }
+.empty-note-box { text-align: center; padding: 30px 10px; color: var(--text-dim); font-size: 13px; line-height: 1.6; }
+
+.levels-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.level-box { background: var(--glass-strong); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; }
+.level-box .lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dimmer); display: block; margin-bottom: 5px; }
+.level-box .val { font-family: var(--font-mono); font-size: 15px; font-weight: 600; }
+.level-box.loss .val { color: var(--short); }
+.level-box.win .val { color: var(--long); }
+
+.gauge-track { position: relative; height: 30px; background: var(--bg-1); border-radius: 100px; overflow: hidden; display: flex; border: 1px solid var(--border); }
+.gauge-fill-short, .gauge-fill-long { height: 100%; transition: width 0.4s ease; }
+.gauge-fill-short { background: linear-gradient(90deg, var(--short-soft), var(--short)); margin-left: auto; }
+.gauge-fill-long { background: linear-gradient(90deg, var(--long), var(--long-soft)); }
+.gauge-labels { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; }
+.gauge-labels .s { color: var(--short); }
+.gauge-labels .l { color: var(--long); }
+
+/* ---- Scanner ---- */
+.scanner-controls { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.checkbox-field { flex-direction: row; align-items: center; }
+.checkbox-field label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-dim); font-weight: 500; }
+.checkbox-field input[type="checkbox"] { accent-color: var(--accent-b); width: 15px; height: 15px; }
+
+.scanner-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.scanner-column-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 4px; margin-bottom: 10px;
+}
+.scanner-column-head h3 { margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 0.02em; display: flex; align-items: center; gap: 8px; }
+.scanner-column-head.long h3 { color: var(--long); }
+.scanner-column-head.short h3 { color: var(--short); }
+.scanner-column-head .count { font-size: 11px; color: var(--text-dimmer); font-weight: 600; }
+
+.coin-list { display: flex; flex-direction: column; gap: 8px; max-height: 640px; overflow-y: auto; padding-right: 4px; }
+.coin-row {
+  display: grid; grid-template-columns: 26px 1fr auto auto auto; align-items: center; gap: 8px;
+  padding: 12px 14px; background: var(--glass-strong); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s;
+}
+.coin-row:hover { background: rgba(255,255,255,0.09); transform: translateX(2px); }
+.coin-row .rank { font-size: 11px; font-weight: 700; color: var(--text-dimmer); }
+.coin-row .coin-main { display: flex; flex-direction: column; gap: 4px; }
+.coin-row .coin-sym { font-weight: 700; font-size: 13.5px; }
+.coin-row .coin-levels { display: flex; gap: 10px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-dim); }
+.coin-row .coin-prob { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; min-width: 74px; }
+.coin-row .prob-pct { font-family: var(--font-mono); font-weight: 700; font-size: 15px; }
+.coin-row.long .prob-pct { color: var(--long); }
+.coin-row.short .prob-pct { color: var(--short); }
+.prob-bar-track { width: 68px; height: 4px; border-radius: 4px; background: var(--bg-1); overflow: hidden; }
+.prob-bar-fill { height: 100%; border-radius: 4px; }
+.coin-row.long .prob-bar-fill { background: var(--long); }
+.coin-row.short .prob-bar-fill { background: var(--short); }
+
+.scan-status-line { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-dim); margin-bottom: 16px; }
+.scan-status-line .spinner {
+  width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border);
+  border-top-color: var(--accent-b); animation: spin 0.8s linear infinite; display: none;
+}
+.scan-status-line.loading .spinner { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.certainty-note { margin-top: 10px; font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+.certainty-note.leans-long { color: var(--long); }
+.certainty-note.leans-short { color: var(--short); }
+.btn-small { padding: 7px 14px; font-size: 11.5px; }
+
+.search-result { margin-top: 16px; padding: 18px; background: var(--glass-strong); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.search-result-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.search-result-head .sym { font-size: 16px; font-weight: 800; }
+.search-result-split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.search-side { padding: 12px 14px; border-radius: var(--radius-sm); background: var(--bg-1); border: 1px solid var(--border-soft); }
+.search-side.long { border-left: 3px solid var(--long); }
+.search-side.short { border-left: 3px solid var(--short); }
+.search-side .side-label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dimmer); margin-bottom: 6px; display: block; }
+.search-side.long .side-label { color: var(--long); }
+.search-side.short .side-label { color: var(--short); }
+.search-side .side-pct { font-family: var(--font-mono); font-size: 22px; font-weight: 700; margin-bottom: 8px; display: block; }
+.search-side .side-levels { display: flex; flex-direction: column; gap: 3px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+
+.horizon-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.horizon-table th {
+  text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-dimmer); font-weight: 700; padding: 0 10px 10px; border-bottom: 1px solid var(--border);
+}
+.horizon-table td { padding: 12px 10px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+.horizon-table tr:last-child td { border-bottom: none; }
+.horizon-table .hz-name { font-weight: 700; font-family: var(--font-ui); }
+.horizon-table .mini-countdown { font-size: 10px; color: var(--text-dimmer); font-family: var(--font-mono); margin-top: 2px; }
+.mini-bar-row { display: flex; align-items: center; gap: 8px; min-width: 100px; }
+.mini-bar-row .mini-bar-label { font-family: var(--font-mono); font-weight: 700; font-size: 12.5px; min-width: 34px; }
+.mini-bar-row .mini-bar-label.long { color: var(--long); }
+.mini-bar-row .mini-bar-label.short { color: var(--short); }
+.horizon-table td.mono { font-family: var(--font-mono); font-size: 11.5px; }
+
+.tracked-explainer { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin: 0 0 16px; padding: 12px 14px; background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); }
+.tracked-list { display: flex; flex-direction: column; gap: 10px; }
+.tracked-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 14px; padding: 13px 16px; background: var(--glass-strong); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); }
+.tracked-row .sym { font-weight: 700; font-size: 13.5px; }
+.tracked-row .pinned-at { font-size: 10.5px; color: var(--text-dimmer); }
+.tracked-compare { display: flex; gap: 16px; font-size: 12px; }
+.tracked-compare .col { display: flex; flex-direction: column; gap: 2px; }
+.tracked-compare .col-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); }
+
+.perf-list { display: flex; flex-direction: column; gap: 6px; }
+.perf-row { display: grid; grid-template-columns: 1fr 1fr auto; align-items: center; gap: 12px; padding: 9px 14px; background: var(--glass-strong); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); font-size: 12px; }
+.perf-name { font-weight: 700; }
+.perf-record { color: var(--text-dim); font-family: var(--font-mono); font-size: 11.5px; }
+.perf-weight { font-family: var(--font-mono); color: var(--text-dim); font-size: 11.5px; text-align: right; }
+.perf-weight.up { color: var(--long); font-weight: 700; }
+.perf-weight.down { color: var(--short); font-weight: 700; }
+
+.ai-brain-card .card-head .meta { font-weight: 700; }
+.ai-brain-controls { display: flex; gap: 12px; margin: 4px 0 18px; }
+.paper-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+.risk-gauge-wrap { margin-bottom: 22px; }
+.sub-head { font-size: 13px; font-weight: 700; margin: 0 0 12px; padding-top: 6px; border-top: 1px solid var(--border-soft); padding-top: 16px; }
+.log-list { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
+.log-row { display: flex; gap: 12px; padding: 8px 12px; background: var(--glass-strong); border-left: 3px solid var(--text-dimmer); border-radius: var(--radius-sm); font-size: 12px; align-items: baseline; }
+.log-row.log-win { border-left-color: var(--long); }
+.log-row.log-loss { border-left-color: var(--short); }
+.log-row.log-weight { border-left-color: var(--amber); }
+.log-time { color: var(--text-dimmer); font-family: var(--font-mono); font-size: 10.5px; white-space: nowrap; }
+.log-text { color: var(--text); }
+
+@media (max-width: 700px) {
+  .paper-stats-grid { grid-template-columns: 1fr 1fr; }
+}
+.tracked-status { padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.tracked-status.valid { background: var(--long-soft); color: var(--long); }
+.tracked-status.weak { background: rgba(255,182,72,0.15); color: var(--amber); }
+.tracked-status.flipped { background: var(--short-soft); color: var(--short); }
+.tracked-remove { background: none; border: none; color: var(--text-dimmer); cursor: pointer; font-size: 16px; padding: 4px 8px; }
+.tracked-remove:hover { color: var(--short); }
+
+.disclaimer {
+  margin-top: 22px; padding: 16px 20px; border: 1px dashed var(--border); border-radius: var(--radius-sm);
+  color: var(--text-dim); font-size: 11.5px; line-height: 1.65; background: rgba(255,255,255,0.015);
+}
+
+@media (max-width: 980px) {
+  .watch-grid { grid-template-columns: 1fr; }
+  .scanner-columns { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .layout { padding: 18px 16px 40px; }
+  .field select, .field input[type="text"] { min-width: 100px; }
+  .levels-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">C</div>
+      <div class="brand-text">
+        <span class="brand-name">Confluence</span>
+        <span class="brand-sub">futures market scanner — runs in your browser</span>
+      </div>
+    </div>
+    <div class="status-pill" id="connStatus">
+      <span class="dot"></span> <span id="connStatusText">idle</span>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Live Watch</h2>
+      <span class="meta" id="pairLabel">— · —</span>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="exchangeSelect">exchange <span class="hint">(futures)</span></label>
+        <select id="exchangeSelect">
+          <option value="mexc" selected>MEXC</option>
+          <option value="binance">Binance</option>
+          <option value="okx">OKX</option>
+          <option value="bitget">Bitget</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="symbolInput">symbol</label>
+        <input id="symbolInput" type="text" value="BTC/USDT" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="timeframeSelect">timeframe</label>
+        <select id="timeframeSelect">
+          <option value="15m">15m</option>
+          <option value="30m">30m</option>
+          <option value="45m">45m</option>
+          <option value="60m" selected>60m</option>
+          <option value="4h">4h</option>
+          <option value="1d">1 day</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="confInput">min confidence <span id="confVal">20</span>% <span class="hint">(15-30% typical)</span></label>
+        <input id="confInput" type="range" min="10" max="60" value="20" step="5">
+      </div>
+      <button id="watchBtn" class="btn btn-primary">Watch</button>
+    </div>
+  </section>
+
+  <section class="watch-grid">
+    <div class="card chart-card">
+      <div class="card-head">
+        <h2>Live Chart</h2>
+        <span class="meta">next candle closes in <strong id="watchCountdownVal" class="mono">—</strong></span>
+      </div>
+      <div id="chartContainer" style="position:relative;">
+        <div id="profitZoneBox" class="risk-zone profit"></div>
+        <div id="lossZoneBox" class="risk-zone loss"></div>
+        <div id="entryZoneBox" class="risk-zone entry"></div>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item"><span class="legend-swatch" style="background:rgba(79,157,255,0.5)"></span>Entry zone (limit, not market)</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--short)"></span>Stop Loss</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:var(--long)"></span>Take Profit</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:rgba(34,216,143,0.4)"></span>Profit zone</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:rgba(251,69,112,0.4)"></span>Loss zone</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#8891a7"></span>Support / Resistance</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Current Signal</h2></div>
+      <div class="signal-summary">
+        <div id="signalEmptyBox" class="empty-note-box">
+          No qualifying signal right now.<br>Waiting for confluence to clear your threshold.
+        </div>
+        <div id="signalBody" class="hidden" style="display:flex; flex-direction:column; gap:16px;">
+          <div class="direction-hero" id="directionHero">
+            <span class="dir-text" id="directionBadge">LONG</span>
+            <span class="conf-text" id="confidenceNum">0%</span>
+          </div>
+          <div class="levels-grid">
+            <div class="level-box"><span class="lbl">Entry</span><span class="val" id="entryVal">—</span></div>
+            <div class="level-box loss"><span class="lbl">Stop Loss</span><span class="val" id="slVal">—</span></div>
+            <div class="level-box win"><span class="lbl">Take Profit</span><span class="val" id="tpVal">—</span></div>
+            <div class="level-box"><span class="lbl">Risk : Reward</span><span class="val" id="rrVal">—</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="gauge-track">
+            <div class="gauge-fill-short" id="gaugeShort"></div>
+            <div class="gauge-fill-long" id="gaugeLong"></div>
+          </div>
+          <div class="gauge-labels">
+            <span class="s" id="shortPctLabel">SHORT —%</span>
+            <span class="l" id="longPctLabel">LONG —%</span>
+          </div>
+          <div class="certainty-note" id="certaintyNote">Enter a symbol and click Watch to see its live long/short standing.</div>
+        </div>
+        <div style="font-size:12px; color:var(--text-dim); display:flex; justify-content:space-between; align-items:center;">
+          <span>last price</span>
+          <span class="mono" id="lastPrice" style="color:var(--text); font-weight:700;">—</span>
+          <button id="favWatchBtn" class="btn btn-secondary btn-small" style="display:none;">☆ Favorite</button>
+          <button id="trackWatchBtn" class="btn btn-secondary btn-small" style="display:none;">📌 Track this coin</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Search Any Coin</h2>
+      <span class="meta">shows every horizon at once, live — updates every 30s</span>
+    </div>
+    <div class="scanner-controls">
+      <div class="field">
+        <label for="searchSymbolInput">coin</label>
+        <input id="searchSymbolInput" type="text" placeholder="e.g. XRP or XRP/USDT" spellcheck="false">
+      </div>
+      <button id="checkCoinBtn" class="btn btn-primary">Check Coin</button>
+    </div>
+    <div id="searchResultBox" class="search-result hidden"></div>
+  </section>
+
+  <section class="card" id="favoritesCard">
+    <div class="card-head">
+      <h2>Favorites</h2>
+      <span class="meta">up to 10 · quick access, live 60-min read</span>
+    </div>
+    <div id="favoritesList" class="tracked-list">
+      <p style="color:var(--text-dimmer); font-size:12.5px; padding:6px 4px;">No favorites yet — star a coin from Search or the scanner (up to 10).</p>
+    </div>
+  </section>
+
+  <section class="card ai-brain-card">
+    <div class="card-head">
+      <h2>🧠 AI Brain</h2>
+      <span class="meta" id="aiBrainStatusPill">⚪ Paused</span>
+    </div>
+    <p class="tracked-explainer">Only runs while this tab is open — there's no way for a browser-only tool to run in
+      the background. When started, it <strong>picks its own coins</strong> (the 25 most-traded futures on the
+      selected exchange, refreshed every 30 min), scans them every 60 seconds, opens a simulated (paper) trade
+      when one clears the confidence bar, and watches live prices to see if it actually hits take-profit or
+      stop-loss. Max 5 positions open at once. Real outcomes feed the Strategy Performance ledger below. A hard
+      daily stop at <strong>-6% of the virtual balance</strong> blocks new trades until the next UTC day — existing
+      open trades still get watched to resolution. <strong>Everything here is simulated — no real money, ever.</strong></p>
+
+    <div class="ai-brain-controls">
+      <button id="aiBrainToggleBtn" class="btn btn-primary">Start AI Brain</button>
+      <button id="paperResetBtn" class="btn btn-secondary">Reset Paper Account</button>
+    </div>
+
+    <div class="paper-stats-grid">
+      <div class="level-box"><span class="lbl">Virtual Balance</span><span class="val" id="paperBalanceVal">$10000.00</span></div>
+      <div class="level-box"><span class="lbl">All-Time P&L</span><span class="val" id="paperTotalPnlVal">+0.00%</span></div>
+      <div class="level-box"><span class="lbl">Today's P&L</span><span class="val" id="paperDailyPnlVal">+0.00% / -6% limit</span></div>
+      <div class="level-box"><span class="lbl">Win Rate</span><span class="val" id="paperWinRateVal" style="font-size:13px;">no closed trades yet</span></div>
+    </div>
+
+    <div class="risk-gauge-wrap">
+      <span class="lbl" style="display:block; margin-bottom:6px;">Today's risk used (of -6% daily stop)</span>
+      <div class="gauge-track"><div class="gauge-fill-short" id="paperRiskBarFill" style="width:0%; margin-left:0;"></div></div>
+    </div>
+
+    <h3 class="sub-head">Today's / Recent Paper Trades</h3>
+    <div id="paperTradesList" class="tracked-list">
+      <p style="color:var(--text-dimmer); font-size:12.5px; padding:6px 4px;">No paper trades yet — start the AI Brain with at least one Favorite coin.</p>
+    </div>
+
+    <h3 class="sub-head">Learning Log — what it did, and why</h3>
+    <div id="learningLogList" class="log-list">
+      <p style="color:var(--text-dimmer); font-size:12.5px; padding:6px 4px;">Nothing yet — start the AI Brain to see its activity here.</p>
+    </div>
+  </section>
+
+  <section class="card" id="trackedCard">
+    <div class="card-head">
+      <h2>Tracked Signals</h2>
+      <span class="meta">stays visible even if it drops off the scanner — refreshes automatically</span>
+    </div>
+    <p class="tracked-explainer">Scores are recalculated fresh every scan from the latest price action, so a coin
+      can move in or out of the top 20 within minutes — that's not an error, it's the market moving. Track a coin
+      after you act on it to see its <strong>original call</strong> next to its <strong>current status</strong>,
+      so you always know whether it's still valid, weakening, or has flipped.</p>
+    <div id="trackedList" class="tracked-list">
+      <p style="color:var(--text-dimmer); font-size:12.5px; padding:6px 4px;">No coins tracked yet — click "📌 Track" on any signal to pin it here.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Strategy Performance</h2>
+      <span class="meta">real outcomes adjusting real weight — not a black box</span>
+    </div>
+    <p class="tracked-explainer">When a Tracked Signal or an AI Brain paper trade actually resolves — price
+      genuinely hits its take-profit or stop-loss — every strategy that voted for that call gets credited with a
+      win or blamed for a loss. A strategy with a real track record of being right earns a bit more influence
+      (capped at 1.3× its base weight); one that keeps missing earns a bit less (floored at 0.7×). It takes at
+      least 3 resolved trades before any adjustment happens, and this resets when you close the app.</p>
+    <div id="strategyPerfList" class="perf-list"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Market Scanner</h2>
+      <span class="meta">suggests coins for you — futures only</span>
+    </div>
+    <div class="scanner-controls">
+      <div class="field">
+        <label for="scanDepthSelect">scan top</label>
+        <select id="scanDepthSelect">
+          <option value="30">30 coins</option>
+          <option value="60" selected>60 coins</option>
+          <option value="100">100 coins</option>
+          <option value="1000">1000 coins (slow)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="scanHorizonSelect">horizon</label>
+        <select id="scanHorizonSelect">
+          <option value="15m">next 15 min</option>
+          <option value="30m">next 30 min</option>
+          <option value="45m" selected>next 45 min</option>
+          <option value="60m">next 60 min</option>
+          <option value="4h">next 4 hours</option>
+          <option value="1d">next 1 day</option>
+        </select>
+      </div>
+      <div class="field checkbox-field">
+        <label><input type="checkbox" id="autoRescanCheck"> auto-rescan every 5 min</label>
+      </div>
+      <button id="scanBtn" class="btn btn-secondary">Scan Market</button>
+    </div>
+    <div class="scan-status-line" id="scanStatusLine"><span class="spinner"></span><span id="scanStatus">Click "Scan Market" to check the most active futures coins and rank them by long/short probability.</span></div>
+
+    <div class="scanner-columns">
+      <div>
+        <div class="scanner-column-head long"><h3>▲ Long Candidates</h3><span class="count" id="longCount">top 20</span></div>
+        <div id="longList" class="coin-list"></div>
+      </div>
+      <div>
+        <div class="scanner-column-head short"><h3>▼ Short Candidates</h3><span class="count" id="shortCount">top 20</span></div>
+        <div id="shortList" class="coin-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="disclaimer">
+    Rule-based confluence signals from public, documented strategies — not financial advice, not a guarantee of
+    accuracy. Futures trading is leveraged and can lose more than your initial margin. Long/short percentages
+    reflect how strongly the strategies currently lean each way, not a statistical probability of profit — both
+    can be low at once when signals are genuinely unclear. The "next N minutes" horizon reflects the candle
+    timeframe the indicators are computed on, not a literal price forecast. Entry is shown as a suggested LIMIT
+    zone — a modest pullback toward the mean — instead of the current market price, so you're not chasing the
+    move; the trade-off is it may not fill if price runs without any pullback at all. Stop-loss/take-profit
+    distances are scaled to the horizon you selected, so a 15-minute signal isn't carrying a multi-day target.
+    None of this changes the underlying win rate — it's better risk placement, not a more accurate prediction.
+    Runs entirely in your browser: fetches public data directly from the exchange you pick, computes everything
+    locally, sends nothing anywhere, needs no account or API key. No trades are placed automatically.
+  </footer>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+// ============================================================
+// CORE INDICATOR + STRATEGY LOGIC
+// (identical to, and numerically verified against, the Python
+// version — see indicators.py / strategies.py / engine.py)
+// ============================================================
+// ---- indicator functions ----
+function ema(values, period) {
+  const k = 2 / (period + 1);
+  const result = new Array(values.length).fill(null);
+  let prev = values[0];
+  result[0] = prev;
+  for (let i = 1; i < values.length; i++) {
+    prev = values[i] * k + prev * (1 - k);
+    result[i] = prev;
+  }
+  return result;
+}
+
+function sma(values, period) {
+  const result = new Array(values.length).fill(null);
+  for (let i = period - 1; i < values.length; i++) {
+    let sum = 0;
+    for (let j = i - period + 1; j <= i; j++) sum += values[j];
+    result[i] = sum / period;
+  }
+  return result;
+}
+
+function stddev(values, period) {
+  const result = new Array(values.length).fill(null);
+  for (let i = period - 1; i < values.length; i++) {
+    const slice = values.slice(i - period + 1, i + 1);
+    const mean = slice.reduce((a, b) => a + b, 0) / period;
+    const variance = slice.reduce((a, b) => a + (b - mean) ** 2, 0) / (period - 1);
+    result[i] = Math.sqrt(variance);
+  }
+  return result;
+}
+
+function ewmWilder(values, period) {
+  const alpha = 1 / period;
+  const result = new Array(values.length).fill(null);
+  let prev = values[0];
+  result[0] = prev;
+  for (let i = 1; i < values.length; i++) {
+    prev = values[i] * alpha + prev * (1 - alpha);
+    result[i] = prev;
+  }
+  return result;
+}
+
+function rsi(values, period = 14) {
+  const gains = [0], losses = [0];
+  for (let i = 1; i < values.length; i++) {
+    const diff = values[i] - values[i - 1];
+    gains.push(Math.max(diff, 0));
+    losses.push(Math.max(-diff, 0));
+  }
+  const avgGain = ewmWilder(gains, period);
+  const avgLoss = ewmWilder(losses, period);
+  return values.map((_, i) => {
+    const ag = avgGain[i], al = avgLoss[i];
+    if (al === 0) return ag === 0 ? 50 : 100;
+    const rs = ag / al;
+    return 100 - 100 / (1 + rs);
+  });
+}
+
+function macd(values, fast = 12, slow = 26, signal = 9) {
+  const emaFast = ema(values, fast);
+  const emaSlow = ema(values, slow);
+  const macdLine = values.map((_, i) => emaFast[i] - emaSlow[i]);
+  const signalLine = ema(macdLine, signal);
+  const hist = macdLine.map((v, i) => v - signalLine[i]);
+  return { macdLine, signalLine, hist };
+}
+
+function bollinger(values, period = 20, mult = 2) {
+  const mid = sma(values, period);
+  const std = stddev(values, period);
+  const upper = mid.map((m, i) => (m === null ? null : m + mult * std[i]));
+  const lower = mid.map((m, i) => (m === null ? null : m - mult * std[i]));
+  return { upper, mid, lower };
+}
+
+function atr(candles, period = 14) {
+  const tr = [candles[0].high - candles[0].low];
+  for (let i = 1; i < candles.length; i++) {
+    const c = candles[i], p = candles[i - 1];
+    tr.push(Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close)));
+  }
+  return ewmWilder(tr, period);
+}
+
+function volumeSpike(candles, period = 20, mult = 1.5) {
+  const vols = candles.map(c => c.volume);
+  const avg = sma(vols, period);
+  return vols.map((v, i) => avg[i] !== null && v > avg[i] * mult);
+}
+
+function donchian(candles, period = 20) {
+  const upper = new Array(candles.length).fill(null);
+  const lower = new Array(candles.length).fill(null);
+  for (let i = period - 1; i < candles.length; i++) {
+    let hi = -Infinity, lo = Infinity;
+    for (let j = i - period + 1; j <= i; j++) { hi = Math.max(hi, candles[j].high); lo = Math.min(lo, candles[j].low); }
+    upper[i] = hi; lower[i] = lo;
+  }
+  return { upper, lower };
+}
+
+function adx(candles, period = 14) {
+  const n = candles.length;
+  const plusDM = [0], minusDM = [0], tr = [candles[0].high - candles[0].low];
+  for (let i = 1; i < n; i++) {
+    const c = candles[i], p = candles[i - 1];
+    const upMove = c.high - p.high;
+    const downMove = p.low - c.low;
+    plusDM.push((upMove > downMove && upMove > 0) ? upMove : 0);
+    minusDM.push((downMove > upMove && downMove > 0) ? downMove : 0);
+    tr.push(Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close)));
+  }
+  const atrArr = ewmWilder(tr, period);
+  const plusDIraw = ewmWilder(plusDM, period);
+  const minusDIraw = ewmWilder(minusDM, period);
+  const plusDI = plusDIraw.map((v, i) => (atrArr[i] ? 100 * v / atrArr[i] : 0));
+  const minusDI = minusDIraw.map((v, i) => (atrArr[i] ? 100 * v / atrArr[i] : 0));
+  const dx = plusDI.map((v, i) => {
+    const sum = v + minusDI[i];
+    return sum ? 100 * Math.abs(v - minusDI[i]) / sum : 0;
+  });
+  return ewmWilder(dx, period);
+}
+
+function stochastic(candles, kPeriod = 14, dPeriod = 3) {
+  const k = new Array(candles.length).fill(50);
+  for (let i = kPeriod - 1; i < candles.length; i++) {
+    let hi = -Infinity, lo = Infinity;
+    for (let j = i - kPeriod + 1; j <= i; j++) { hi = Math.max(hi, candles[j].high); lo = Math.min(lo, candles[j].low); }
+    const range = hi - lo;
+    k[i] = range ? 100 * (candles[i].close - lo) / range : 50;
+  }
+  const dRaw = sma(k, dPeriod);
+  const d = dRaw.map((v, i) => (v === null ? k[i] : v));
+  return { k, d };
+}
+
+function vwapRolling(candles, window = 100) {
+  const result = new Array(candles.length).fill(null);
+  for (let i = window - 1; i < candles.length; i++) {
+    let sumPV = 0, sumV = 0;
+    for (let j = i - window + 1; j <= i; j++) {
+      const tp = (candles[j].high + candles[j].low + candles[j].close) / 3;
+      sumPV += tp * candles[j].volume;
+      sumV += candles[j].volume;
+    }
+    result[i] = sumV ? sumPV / sumV : null;
+  }
+  return result;
+}
+
+function computeIndicators(candles) {
+  const closes = candles.map(c => c.close);
+  const { upper: bbUpper, mid: bbMid, lower: bbLower } = bollinger(closes);
+  const { upper: dcUpper, lower: dcLower } = donchian(candles);
+  const { k: stochK, d: stochD } = stochastic(candles);
+  const { hist: macdHist } = macd(closes);
+  return {
+    emaFast: ema(closes, 9),
+    emaSlow: ema(closes, 21),
+    emaTrend: ema(closes, 200),
+    rsiArr: rsi(closes, 14),
+    rsi2Arr: rsi(closes, 2),
+    macdHist,
+    bbUpper, bbLower,
+    atrArr: atr(candles),
+    volSpike: volumeSpike(candles),
+    dcUpper, dcLower,
+    adxArr: adx(candles),
+    stochK, stochD,
+    vwapArr: vwapRolling(candles),
+  };
+}
+
+// ---- strategies ----
+const STRATEGY_WEIGHTS = {
+  "EMA Crossover": 1.0, "Trend Filter (200 EMA)": 1.0, "RSI": 0.8, "MACD": 1.0,
+  "Bollinger Bands": 0.8, "Donchian Breakout": 1.3, "RSI-2 Mean Reversion": 1.1,
+  "Stochastic": 0.7, "VWAP": 0.9, "Consecutive-Day Reversion": 0.7,
+  "RSI Divergence": 1.1,
+};
+
+// ---- adaptive weighting: real outcomes adjust real trust ----
+// A strategy's base weight above reflects general documented reliability.
+// strategyPerformance tracks REAL resolved outcomes from Tracked Signals
+// and the AI Brain's paper trades in this session — when a call actually
+// resolves (price genuinely hits TP or SL), every strategy that voted
+// WITH that call gets credited or blamed. Mild adjustment (0.7x-1.3x),
+// requires 3+ resolved outcomes before touching anything, resets each
+// session — there is nowhere for a browser-only tool to remember this
+// permanently.
+let strategyPerformance = {};
+function getAdjustedWeight(name) {
+  const base = STRATEGY_WEIGHTS[name] || 1.0;
+  const perf = strategyPerformance[name];
+  if (!perf) return base;
+  const total = perf.wins + perf.losses;
+  if (total < 3) return base;
+  const winRate = perf.wins / total;
+  const factor = Math.min(1.3, Math.max(0.7, 1 + (winRate - 0.5) * 1.2));
+  return base * factor;
+}
+// Shared by Tracked Signals AND the AI Brain's paper trades — one
+// definition, so both feed the exact same learning ledger and can never
+// silently drift apart the way an earlier scoring bug once did.
+function resolveOutcome(direction, levels, candlesSincePin) {
+  for (const c of candlesSincePin) {
+    if (direction === 'LONG') {
+      if (c.low <= levels.stopLoss) return 'loss';
+      if (c.high >= levels.takeProfit) return 'win';
+    } else {
+      if (c.high >= levels.stopLoss) return 'loss';
+      if (c.low <= levels.takeProfit) return 'win';
+    }
+  }
+  return 'open';
+}
+function recordOutcome(voteSnapshot, direction, outcome) {
+  if (!voteSnapshot || !voteSnapshot.length) return;
+  voteSnapshot.forEach(v => {
+    const votedWithCall = (direction === 'LONG' && v.vote === 1) || (direction === 'SHORT' && v.vote === -1);
+    if (!votedWithCall) return;
+    const before = getAdjustedWeight(v.name);
+    if (!strategyPerformance[v.name]) strategyPerformance[v.name] = { wins: 0, losses: 0 };
+    if (outcome === 'win') strategyPerformance[v.name].wins++;
+    else strategyPerformance[v.name].losses++;
+    const after = getAdjustedWeight(v.name);
+    // Surface the actual learning moment — when real results move a
+    // strategy's influence, say so plainly rather than adjusting silently.
+    if (Math.abs(after - before) > 0.005 && typeof addLearningLog === 'function') {
+      const p = strategyPerformance[v.name];
+      addLearningLog(
+        `🧠 ${v.name} now weighted ${after.toFixed(2)} (was ${before.toFixed(2)}) after its ${p.wins}W/${p.losses}L record — trusting it ${after > before ? 'more' : 'less'}`,
+        'weight'
+      );
+    }
+  });
+  if (typeof renderStrategyPerformance === 'function') renderStrategyPerformance();
+}
+
+function runStrategies(candles, ind, i) {
+  const votes = [];
+  const c = candles[i], p = candles[i - 1];
+
+  // EMA Crossover
+  if (ind.emaFast[i - 1] <= ind.emaSlow[i - 1] && ind.emaFast[i] > ind.emaSlow[i]) {
+    votes.push({ name: "EMA Crossover", vote: 1, reason: "9 EMA crossed above 21 EMA" });
+  } else if (ind.emaFast[i - 1] >= ind.emaSlow[i - 1] && ind.emaFast[i] < ind.emaSlow[i]) {
+    votes.push({ name: "EMA Crossover", vote: -1, reason: "9 EMA crossed below 21 EMA" });
+  } else {
+    votes.push({ name: "EMA Crossover", vote: 0, reason: "No fresh crossover" });
+  }
+
+  // Trend filter
+  if (c.close > ind.emaTrend[i]) votes.push({ name: "Trend Filter (200 EMA)", vote: 1, reason: "Price above 200 EMA" });
+  else votes.push({ name: "Trend Filter (200 EMA)", vote: -1, reason: "Price below 200 EMA" });
+
+  // RSI
+  if (ind.rsiArr[i] < 30) votes.push({ name: "RSI", vote: 1, reason: `RSI ${ind.rsiArr[i].toFixed(1)} oversold` });
+  else if (ind.rsiArr[i] > 70) votes.push({ name: "RSI", vote: -1, reason: `RSI ${ind.rsiArr[i].toFixed(1)} overbought` });
+  else votes.push({ name: "RSI", vote: 0, reason: "RSI neutral" });
+
+  // MACD
+  if (ind.macdHist[i - 1] <= 0 && ind.macdHist[i] > 0) votes.push({ name: "MACD", vote: 1, reason: "Histogram flipped positive" });
+  else if (ind.macdHist[i - 1] >= 0 && ind.macdHist[i] < 0) votes.push({ name: "MACD", vote: -1, reason: "Histogram flipped negative" });
+  else votes.push({ name: "MACD", vote: 0, reason: "No fresh MACD flip" });
+
+  // Bollinger
+  if (c.close <= ind.bbLower[i]) votes.push({ name: "Bollinger Bands", vote: 1, reason: "Price at/below lower band" });
+  else if (c.close >= ind.bbUpper[i]) votes.push({ name: "Bollinger Bands", vote: -1, reason: "Price at/above upper band" });
+  else votes.push({ name: "Bollinger Bands", vote: 0, reason: "Price inside bands" });
+
+  // Donchian breakout, ADX gated
+  if (ind.adxArr[i] < 20) {
+    votes.push({ name: "Donchian Breakout", vote: 0, reason: `ADX ${ind.adxArr[i].toFixed(1)} too low (ranging)` });
+  } else if (c.close >= ind.dcUpper[i] && p.close < ind.dcUpper[i - 1]) {
+    votes.push({ name: "Donchian Breakout", vote: 1, reason: "New 20-period high breakout" });
+  } else if (c.close <= ind.dcLower[i] && p.close > ind.dcLower[i - 1]) {
+    votes.push({ name: "Donchian Breakout", vote: -1, reason: "New 20-period low breakdown" });
+  } else {
+    votes.push({ name: "Donchian Breakout", vote: 0, reason: "No fresh channel breakout" });
+  }
+
+  // RSI-2 mean reversion
+  const uptrend = c.close > ind.emaTrend[i];
+  if (uptrend && ind.rsi2Arr[i] < 10) votes.push({ name: "RSI-2 Mean Reversion", vote: 1, reason: "RSI-2 deeply oversold in uptrend" });
+  else if (!uptrend && ind.rsi2Arr[i] > 90) votes.push({ name: "RSI-2 Mean Reversion", vote: -1, reason: "RSI-2 deeply overbought in downtrend" });
+  else votes.push({ name: "RSI-2 Mean Reversion", vote: 0, reason: "No aligned RSI-2 extreme" });
+
+  // Stochastic
+  if (ind.stochK[i - 1] <= ind.stochD[i - 1] && ind.stochK[i] > ind.stochD[i] && ind.stochK[i] < 30) {
+    votes.push({ name: "Stochastic", vote: 1, reason: "%K crossed above %D from oversold" });
+  } else if (ind.stochK[i - 1] >= ind.stochD[i - 1] && ind.stochK[i] < ind.stochD[i] && ind.stochK[i] > 70) {
+    votes.push({ name: "Stochastic", vote: -1, reason: "%K crossed below %D from overbought" });
+  } else {
+    votes.push({ name: "Stochastic", vote: 0, reason: "No stochastic crossover at extreme" });
+  }
+
+  // VWAP
+  if (ind.vwapArr[i] === null || ind.vwapArr[i - 1] === null) {
+    votes.push({ name: "VWAP", vote: 0, reason: "Not enough data yet" });
+  } else if (p.close <= ind.vwapArr[i - 1] && c.close > ind.vwapArr[i]) {
+    votes.push({ name: "VWAP", vote: 1, reason: "Price reclaimed VWAP" });
+  } else if (p.close >= ind.vwapArr[i - 1] && c.close < ind.vwapArr[i]) {
+    votes.push({ name: "VWAP", vote: -1, reason: "Price rejected VWAP" });
+  } else {
+    votes.push({ name: "VWAP", vote: 0, reason: "No fresh VWAP cross" });
+  }
+
+  // Consecutive-day reversion
+  const lookback = 3;
+  const diffs = [];
+  for (let j = i - lookback + 1; j <= i; j++) diffs.push(candles[j].close - candles[j - 1].close);
+  if (diffs.every(d => d < 0)) votes.push({ name: "Consecutive-Day Reversion", vote: 1, reason: `${lookback} straight down closes` });
+  else if (diffs.every(d => d > 0)) votes.push({ name: "Consecutive-Day Reversion", vote: -1, reason: `${lookback} straight up closes` });
+  else votes.push({ name: "Consecutive-Day Reversion", vote: 0, reason: "No consecutive streak" });
+
+  // RSI/Price Divergence — a classic trend-exhaustion signal, distinct
+  // from plain RSI level checks: price makes a new swing high/low but
+  // RSI fails to confirm it, suggesting the move is losing momentum.
+  votes.push(rsiDivergenceVote(candles, ind, i));
+
+  return votes.map(v => ({ ...v, weight: getAdjustedWeight(v.name) }));
+}
+
+function rsiDivergenceVote(candles, ind, i, lookback = 5, searchWindow = 40) {
+  // Find the two most recent confirmed swing highs and swing lows within
+  // the search window, using the same fractal-pivot method as the chart's
+  // support/resistance detection, then compare price vs RSI at each pair.
+  const start = Math.max(lookback, i - searchWindow);
+  const highs = [], lows = [];
+  for (let j = start; j <= i - lookback; j++) {
+    const windowSlice = candles.slice(j - lookback, j + lookback + 1);
+    if (windowSlice.every(c => c.high <= candles[j].high)) highs.push({ idx: j, price: candles[j].high, rsi: ind.rsiArr[j] });
+    if (windowSlice.every(c => c.low >= candles[j].low)) lows.push({ idx: j, price: candles[j].low, rsi: ind.rsiArr[j] });
+  }
+  if (highs.length >= 2) {
+    const [prev, last] = highs.slice(-2);
+    if (last.price > prev.price && last.rsi < prev.rsi) {
+      return { name: "RSI Divergence", vote: -1, reason: "Price higher high but RSI lower high (bearish divergence)" };
+    }
+  }
+  if (lows.length >= 2) {
+    const [prev, last] = lows.slice(-2);
+    if (last.price < prev.price && last.rsi > prev.rsi) {
+      return { name: "RSI Divergence", vote: 1, reason: "Price lower low but RSI higher low (bullish divergence)" };
+    }
+  }
+  return { name: "RSI Divergence", vote: 0, reason: "No divergence between recent swings" };
+}
+
+function evaluate(candles, ind, i, minConfidence = 60) {
+  if (i < 210) return null;
+  const votes = runStrategies(candles, ind, i);
+  // Single source of truth: reuse the same corrected scoring used
+  // everywhere else in the app, instead of a separate duplicated
+  // calculation that can silently drift out of sync with it.
+  const { longScore, shortScore } = scoreBothDirections(votes);
+  if (longScore === shortScore) return null; // includes the both-zero case: no net lean at all
+  const direction = longScore > shortScore ? "LONG" : "SHORT";
+  let confidence = Math.max(longScore, shortScore);
+  if (ind.volSpike[i]) confidence = Math.min(100, confidence + 10);
+  if (confidence < minConfidence) return null;
+
+  const winning = votes.filter(v => (direction === "LONG" && v.vote === 1) || (direction === "SHORT" && v.vote === -1));
+  const entry = candles[i].close;
+  const atrVal = ind.atrArr[i];
+  const sl = direction === "LONG" ? entry - atrVal * 1.5 : entry + atrVal * 1.5;
+  const tp = direction === "LONG" ? entry + atrVal * 3.0 : entry - atrVal * 3.0;
+
+  return { direction, confidence, entry, stopLoss: sl, takeProfit: tp, reasons: winning.map(v => `${v.name}: ${v.reason}`) };
+}
+
+
+
+// ============================================================
+// RESAMPLING — builds 30/45/60-min candles from 15-min base data
+// (tested: correctly aggregates OHLCV and trims incomplete groups)
+// ============================================================
+function resampleCandles(base, groupSize) {
+  if (groupSize <= 1) return base;
+  const n = base.length;
+  const usableCount = Math.floor(n / groupSize) * groupSize;
+  const start = n - usableCount;
+  const out = [];
+  for (let i = start; i < n; i += groupSize) {
+    const chunk = base.slice(i, i + groupSize);
+    out.push({
+      time: chunk[0].time,
+      open: chunk[0].open,
+      high: Math.max(...chunk.map(c => c.high)),
+      low: Math.min(...chunk.map(c => c.low)),
+      close: chunk[chunk.length - 1].close,
+      volume: chunk.reduce((a, c) => a + c.volume, 0),
+    });
+  }
+  return out;
+}
+// (horizon config now lives in HORIZON_CONFIG, defined after the exchange adapters below)
+
+// ============================================================
+// DUAL LONG/SHORT SCORING
+// (tested: mathematically consistent with the single-confidence
+// formula already validated against the Python engine)
+// ============================================================
+function scoreBothDirections(votes) {
+  const totalWeight = votes.reduce((a, v) => a + (v.weight ?? STRATEGY_WEIGHTS[v.name] ?? 1.0), 0);
+  const longWeight = votes.filter(v => v.vote === 1).reduce((a, v) => a + (v.weight ?? STRATEGY_WEIGHTS[v.name] ?? 1.0), 0);
+  const shortWeight = votes.filter(v => v.vote === -1).reduce((a, v) => a + (v.weight ?? STRATEGY_WEIGHTS[v.name] ?? 1.0), 0);
+  const activeWeight = longWeight + shortWeight;
+  if (activeWeight === 0) return { longScore: 0, shortScore: 0 };
+  // How one-sided the ENGAGED opinions are — dividing by activeWeight
+  // (not totalWeight) means strategies sitting neutral on this bar don't
+  // dilute the confidence of the ones that do have something to say.
+  const longShare = longWeight / activeWeight;
+  const shortShare = shortWeight / activeWeight;
+  // A separate participation factor: how much of the total available
+  // strategy pool actually weighed in. This is what keeps a single lone
+  // vote (with nothing else agreeing) from reading as high confidence —
+  // it correctly scores as "one weak opinion, no confluence" rather than
+  // "100% agreement" just because that one vote had no opposition.
+  const participation = totalWeight ? activeWeight / totalWeight : 0;
+  const dampener = participation;
+  const longScore = 100 * longShare * dampener;
+  const shortScore = 100 * shortShare * dampener;
+  return { longScore, shortScore };
+}
+// Risk multipliers scaled to the selected horizon — a 15-minute trade
+// should have a 15-minute-sized target, not the same multi-day-reaching
+// distance used for a 1-day swing trade. Shorter horizons get tighter
+// SL/TP; longer horizons get room to breathe, since a multi-day move is
+// actually what's being anticipated at that horizon.
+const RISK_MULTIPLIERS = {
+  '15m': { sl: 1.0, tp: 1.6, pullback: 0.35 },
+  '30m': { sl: 1.0, tp: 1.8, pullback: 0.40 },
+  '45m': { sl: 1.1, tp: 2.0, pullback: 0.45 },
+  '60m': { sl: 1.2, tp: 2.2, pullback: 0.50 },
+  '4h':  { sl: 1.4, tp: 2.6, pullback: 0.60 },
+  '1d':  { sl: 1.5, tp: 3.0, pullback: 0.75 },
+};
+
+// Suggests a LIMIT entry zone (a modest pullback toward the mean) instead
+// of chasing the current market price — the same instinct a manual trader
+// has when they place a limit order a bit better than market instead of
+// buying/selling immediately. If price never pulls back, the trade simply
+// doesn't fill; that's the honest trade-off of not chasing.
+function computeLevels(direction, currentPrice, atrVal, horizonKey) {
+  const mult = RISK_MULTIPLIERS[horizonKey] || RISK_MULTIPLIERS['60m'];
+  const pullback = atrVal * mult.pullback;
+  const entryLow = direction === 'LONG' ? currentPrice - pullback : currentPrice;
+  const entryHigh = direction === 'LONG' ? currentPrice : currentPrice + pullback;
+  const planningEntry = (entryLow + entryHigh) / 2;
+  const stopLoss = direction === 'LONG' ? planningEntry - atrVal * mult.sl : planningEntry + atrVal * mult.sl;
+  const takeProfit = direction === 'LONG' ? planningEntry + atrVal * mult.tp : planningEntry - atrVal * mult.tp;
+  return { entryZone: { low: entryLow, high: entryHigh }, entry: planningEntry, stopLoss, takeProfit };
+}
+
+
+// ============================================================
+// EXCHANGE ADAPTERS — futures/perpetuals only
+// (tested against each exchange's documented response format)
+// ============================================================
+// ============ Exchange adapters (to be embedded in final HTML) ============
+
+const EXCHANGES = {
+  binance: { label: 'Binance', color: '#f0b90b' },
+  okx: { label: 'OKX', color: '#000000' },
+  bitget: { label: 'Bitget', color: '#00f0ff' },
+  mexc: { label: 'MEXC', color: '#00d0a0' },
+};
+
+// Maps our internal interval keys to each exchange's own interval string
+const INTERVAL_MAP = {
+  binance: { '15m': '15m', '30m': '30m', '1h': '1h', '4h': '4h', '1d': '1d' },
+  okx:     { '15m': '15m', '30m': '30m', '1h': '1H', '4h': '4H', '1d': '1D' },
+  bitget:  { '15m': '15m', '30m': '30m', '1h': '1H', '4h': '4H', '1d': '1D' },
+  mexc:    { '15m': 'Min15', '30m': 'Min30', '1h': 'Min60', '4h': 'Hour4', '1d': 'Day1' },
+};
+const MEXC_INTERVAL_SECONDS = { Min15: 900, Min30: 1800, Min60: 3600, Hour4: 14400, Day1: 86400 };
+
+// ---- Binance USDⓈ-M Futures ----
+async function binanceFetchTickers(fetchFn) {
+  const res = await fetchFn('https://fapi.binance.com/fapi/v1/ticker/24hr');
+  const data = await res.json();
+  return data
+    .filter(d => /^[A-Z0-9]+USDT$/.test(d.symbol)) // perpetuals only, exclude dated/quarterly contracts
+    .map(d => ({ id: d.symbol, display: d.symbol.replace(/USDT$/, '/USDT'), volumeUsd: parseFloat(d.quoteVolume || 0) }))
+    .filter(d => !Number.isNaN(d.volumeUsd));
+}
+async function binanceFetchKlines(fetchFn, id, intervalKey, neededCount) {
+  const interval = INTERVAL_MAP.binance[intervalKey];
+  const limit = Math.min(neededCount, 1000);
+  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${id}&interval=${interval}&limit=${limit}`;
+  const res = await fetchFn(url);
+  if (!res.ok) throw new Error(`Binance klines ${res.status}`);
+  const raw = await res.json();
+  return raw.map(d => ({ time: d[0], open: +d[1], high: +d[2], low: +d[3], close: +d[4], volume: +d[5] }));
+}
+
+// ---- OKX SWAP (perpetuals) ----
+async function okxFetchTickers(fetchFn) {
+  const res = await fetchFn('https://www.okx.com/api/v5/market/tickers?instType=SWAP');
+  const json = await res.json();
+  if (json.code !== '0') throw new Error(`OKX tickers error: ${json.msg}`);
+  return json.data
+    .filter(d => typeof d.instId === 'string' && d.instId.endsWith('-USDT-SWAP'))
+    .map(d => ({ id: d.instId, display: d.instId.replace('-USDT-SWAP', '/USDT'), volumeUsd: parseFloat(d.volCcy24h || d.vol24h || 0) }))
+    .filter(d => !Number.isNaN(d.volumeUsd));
+}
+async function okxFetchKlines(fetchFn, id, intervalKey, neededCount) {
+  const bar = INTERVAL_MAP.okx[intervalKey];
+  let all = [];
+  let after = '';
+  let guard = 0;
+  while (all.length < neededCount && guard < 6) {
+    guard++;
+    const params = new URLSearchParams({ instId: id, bar, limit: '300' });
+    if (after) params.set('after', after);
+    const res = await fetchFn(`https://www.okx.com/api/v5/market/candles?${params.toString()}`);
+    if (!res.ok) throw new Error(`OKX klines ${res.status}`);
+    const json = await res.json();
+    if (json.code !== '0' || !json.data || json.data.length === 0) break;
+    all = all.concat(json.data);
+    after = json.data[json.data.length - 1][0];
+    if (json.data.length < 300) break;
+  }
+  const candles = all
+    .map(d => ({ time: +d[0], open: +d[1], high: +d[2], low: +d[3], close: +d[4], volume: +d[5] }))
+    .reverse(); // OKX returns newest-first
+  return candles.slice(-neededCount);
+}
+
+// ---- Bitget USDT-M Futures (mix) ----
+async function bitgetFetchTickers(fetchFn) {
+  const res = await fetchFn('https://api.bitget.com/api/v2/mix/market/tickers?productType=usdt-futures');
+  const json = await res.json();
+  if (json.code !== '00000') throw new Error(`Bitget tickers error: ${json.msg}`);
+  return json.data
+    .filter(d => typeof d.symbol === 'string' && d.symbol.endsWith('USDT'))
+    .map(d => ({ id: d.symbol, display: d.symbol.replace(/USDT$/, '/USDT'), volumeUsd: parseFloat(d.usdtVolume || 0) }))
+    .filter(d => !Number.isNaN(d.volumeUsd));
+}
+async function bitgetFetchKlines(fetchFn, id, intervalKey, neededCount) {
+  const granularity = INTERVAL_MAP.bitget[intervalKey];
+  const limit = Math.min(neededCount, 1000);
+  const url = `https://api.bitget.com/api/v2/mix/market/candles?symbol=${id}&granularity=${granularity}&limit=${limit}&productType=usdt-futures`;
+  const res = await fetchFn(url);
+  if (!res.ok) throw new Error(`Bitget klines ${res.status}`);
+  const json = await res.json();
+  if (json.code !== '00000') throw new Error(`Bitget klines error: ${json.msg}`);
+  return json.data.map(d => ({ time: +d[0], open: +d[1], high: +d[2], low: +d[3], close: +d[4], volume: +d[5] }));
+}
+
+// ---- MEXC Futures (contract) ----
+async function mexcFetchTickers(fetchFn) {
+  const res = await fetchFn('https://contract.mexc.com/api/v1/contract/ticker');
+  const json = await res.json();
+  if (!json.success) throw new Error('MEXC tickers error');
+  return json.data
+    .filter(d => typeof d.symbol === 'string' && d.symbol.endsWith('_USDT'))
+    .map(d => ({ id: d.symbol, display: d.symbol.replace('_USDT', '/USDT'), volumeUsd: parseFloat(d.amount24 || 0) }))
+    .filter(d => !Number.isNaN(d.volumeUsd));
+}
+async function mexcFetchKlines(fetchFn, id, intervalKey, neededCount) {
+  const interval = INTERVAL_MAP.mexc[intervalKey];
+  const durationSec = MEXC_INTERVAL_SECONDS[interval];
+  const nowSec = Math.floor(Date.now() / 1000);
+  const startSec = nowSec - neededCount * durationSec;
+  const url = `https://contract.mexc.com/api/v1/contract/kline/${id}?interval=${interval}&start=${startSec}&end=${nowSec}`;
+  const res = await fetchFn(url);
+  if (!res.ok) throw new Error(`MEXC klines ${res.status}`);
+  const json = await res.json();
+  if (!json.success || !json.data) throw new Error('MEXC klines error');
+  const { time, open, high, low, close, vol } = json.data;
+  let candles = time.map((t, i) => ({ time: t * 1000, open: open[i], high: high[i], low: low[i], close: close[i], volume: vol[i] }));
+  if (candles.length > 1 && candles[0].time > candles[candles.length - 1].time) candles.reverse();
+  return candles;
+}
+
+const ADAPTERS = {
+  binance: { fetchTickers: binanceFetchTickers, fetchKlines: binanceFetchKlines },
+  okx: { fetchTickers: okxFetchTickers, fetchKlines: okxFetchKlines },
+  bitget: { fetchTickers: bitgetFetchTickers, fetchKlines: bitgetFetchKlines },
+  mexc: { fetchTickers: mexcFetchTickers, fetchKlines: mexcFetchKlines },
+};
+
+// Fetches candles for any of the 6 supported horizons. Horizons with a
+// native exchange interval (15m/30m/1h/4h/1d) are fetched directly.
+// 45m has no native equivalent on any exchange, so it's built by
+// combining three real 15-minute candles into one (tested to correctly
+// aggregate OHLCV).
+const HORIZON_CONFIG = {
+  '15m': { label: '15 min', native: '15m', fetchCount: 300 },
+  '30m': { label: '30 min', native: '30m', fetchCount: 300 },
+  '45m': { label: '45 min', resampleFrom: '15m', groupSize: 3, fetchCount: 900 },
+  '60m': { label: '60 min', native: '1h', fetchCount: 300 },
+  '4h':  { label: '4 hours', native: '4h', fetchCount: 300 },
+  '1d':  { label: '1 day', native: '1d', fetchCount: 300 },
+};
+const HORIZON_ORDER = ['15m', '30m', '45m', '60m', '4h', '1d'];
+async function fetchKlinesForHorizon(exchangeKey, id, horizonKey) {
+  const config = HORIZON_CONFIG[horizonKey];
+  if (config.resampleFrom) {
+    const base = await ADAPTERS[exchangeKey].fetchKlines(fetch, id, config.resampleFrom, config.fetchCount);
+    return resampleCandles(base, config.groupSize);
+  }
+  return ADAPTERS[exchangeKey].fetchKlines(fetch, id, config.native, config.fetchCount);
+}
+
+// ============================================================
+// SYMBOL ID CONVERSION — display "BTC/USDT" <-> each exchange's
+// native instrument id format
+// ============================================================
+function displayToId(exchangeKey, display) {
+  const base = display.split('/')[0].toUpperCase();
+  if (exchangeKey === 'binance') return `${base}USDT`;
+  if (exchangeKey === 'okx') return `${base}-USDT-SWAP`;
+  if (exchangeKey === 'bitget') return `${base}USDT`;
+  if (exchangeKey === 'mexc') return `${base}_USDT`;
+  return display;
+}
+
+// ============================================================
+// CHART — TradingView's open-source Lightweight Charts library,
+// rendering real candles with entry/SL/TP as price lines PLUS a
+// shaded "risk/reward box" overlay (profit zone + loss zone),
+// the same idea traders draw manually with a position tool.
+// ============================================================
+let chart = null, candleSeries = null, activePriceLines = [];
+let lastChartCandles = null, lastChartLevels = null;
+
+// ============================================================
+// SUPPORT / RESISTANCE — detects real swing highs/lows (fractal
+// pivots) in whichever candles are on screen, clusters nearby
+// touches into a level, and surfaces the strongest ones on each
+// side of price. Recalculated per-horizon since it runs on
+// whatever candle series is currently displayed.
+// ============================================================
+function detectPivots(candles, lookback) {
+  const highs = [], lows = [];
+  for (let i = lookback; i < candles.length - lookback; i++) {
+    const windowSlice = candles.slice(i - lookback, i + lookback + 1);
+    if (windowSlice.every(c => c.high <= candles[i].high)) highs.push(candles[i].high);
+    if (windowSlice.every(c => c.low >= candles[i].low)) lows.push(candles[i].low);
+  }
+  return { highs, lows };
+}
+function clusterLevels(levels, tolerancePct) {
+  if (!levels.length) return [];
+  const sorted = [...levels].sort((a, b) => a - b);
+  const clusters = [];
+  let current = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const avgSoFar = current.reduce((a, b) => a + b, 0) / current.length;
+    if (Math.abs(sorted[i] - avgSoFar) / avgSoFar <= tolerancePct) current.push(sorted[i]);
+    else { clusters.push(current); current = [sorted[i]]; }
+  }
+  clusters.push(current);
+  return clusters.map(c => ({ price: c.reduce((a, b) => a + b, 0) / c.length, touches: c.length }));
+}
+function computeSupportResistance(candles, currentPrice, lookback = 5, maxLevelsPerSide = 2, tolerancePct = 0.004) {
+  const { highs, lows } = detectPivots(candles, lookback);
+  const resistance = clusterLevels(highs, tolerancePct)
+    .filter(c => c.price > currentPrice)
+    .sort((a, b) => b.touches - a.touches || (a.price - currentPrice) - (b.price - currentPrice));
+  const support = clusterLevels(lows, tolerancePct)
+    .filter(c => c.price < currentPrice)
+    .sort((a, b) => b.touches - a.touches || (currentPrice - b.price) - (currentPrice - a.price));
+  return { resistance: resistance.slice(0, maxLevelsPerSide), support: support.slice(0, maxLevelsPerSide) };
+}
+
+function initChart() {
+  if (typeof LightweightCharts === 'undefined') return;
+  const container = document.getElementById('chartContainer');
+  chart = LightweightCharts.createChart(container, {
+    layout: { background: { color: 'transparent' }, textColor: '#8891a7', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 },
+    grid: { vertLines: { color: 'rgba(255,255,255,0.04)' }, horzLines: { color: 'rgba(255,255,255,0.04)' } },
+    rightPriceScale: { borderColor: 'rgba(255,255,255,0.08)' },
+    timeScale: { borderColor: 'rgba(255,255,255,0.08)', timeVisible: true, secondsVisible: false },
+    crosshair: { mode: 0 },
+    width: container.clientWidth,
+    height: 380,
+  });
+  candleSeries = chart.addCandlestickSeries({
+    upColor: '#22d88f', downColor: '#fb4570', borderVisible: false,
+    wickUpColor: '#22d88f', wickDownColor: '#fb4570',
+    priceFormat: { type: 'price', precision: 4, minMove: 0.0001 },
+  });
+  window.addEventListener('resize', () => {
+    if (chart && container.clientWidth) { chart.applyOptions({ width: container.clientWidth }); positionRiskZones(); }
+  });
+  if (chart.timeScale().subscribeVisibleLogicalRangeChange) {
+    chart.timeScale().subscribeVisibleLogicalRangeChange(() => positionRiskZones());
+  }
+}
+
+function updateChart(candles, direction, levels) {
+  if (!candleSeries) return;
+  const data = candles.map(c => ({ time: Math.floor(c.time / 1000), open: c.open, high: c.high, low: c.low, close: c.close }));
+  const lastPrice = candles[candles.length - 1].close;
+  const decimals = priceDecimals(lastPrice);
+  candleSeries.applyOptions({ priceFormat: { type: 'price', precision: decimals, minMove: minMoveForDecimals(decimals) } });
+  candleSeries.setData(data);
+
+  activePriceLines.forEach(pl => { try { candleSeries.removePriceLine(pl); } catch (e) {} });
+  activePriceLines = [];
+  if (levels) {
+    activePriceLines.push(candleSeries.createPriceLine({ price: levels.stopLoss, color: '#fb4570', lineWidth: 2, lineStyle: 0, axisLabelVisible: true, title: 'SL' }));
+    activePriceLines.push(candleSeries.createPriceLine({ price: levels.takeProfit, color: '#22d88f', lineWidth: 2, lineStyle: 0, axisLabelVisible: true, title: 'TP' }));
+  }
+
+  // Support/resistance is recomputed from whichever candles are currently
+  // on screen — switching horizons naturally gives different levels,
+  // since it's that timeframe's own swing structure, not a fixed overlay.
+  const sr = computeSupportResistance(candles, lastPrice);
+  sr.resistance.forEach((r, idx) => {
+    activePriceLines.push(candleSeries.createPriceLine({
+      price: r.price, color: '#8891a7', lineWidth: 1, lineStyle: 2, axisLabelVisible: true,
+      title: `R${idx + 1}${r.touches > 1 ? ` (${r.touches}x)` : ''}`,
+    }));
+  });
+  sr.support.forEach((s, idx) => {
+    activePriceLines.push(candleSeries.createPriceLine({
+      price: s.price, color: '#8891a7', lineWidth: 1, lineStyle: 2, axisLabelVisible: true,
+      title: `S${idx + 1}${s.touches > 1 ? ` (${s.touches}x)` : ''}`,
+    }));
+  });
+
+  lastChartCandles = candles;
+  lastChartLevels = levels;
+  positionRiskZones();
+}
+
+// Draws the shaded entry/profit/loss zone boxes by converting price+time
+// to pixel coordinates and positioning absolutely-placed divs over the
+// chart — the "position tool" style box traders draw by hand. Re-run on
+// every data update, resize, and pan/zoom.
+function positionRiskZones() {
+  const profitEl = document.getElementById('profitZoneBox');
+  const lossEl = document.getElementById('lossZoneBox');
+  const entryEl = document.getElementById('entryZoneBox');
+  if (!profitEl || !lossEl || !entryEl) return;
+  if (!chart || !candleSeries || !lastChartLevels || !lastChartCandles || !lastChartCandles.length) {
+    profitEl.style.width = '0px'; lossEl.style.width = '0px'; entryEl.style.width = '0px';
+    return;
+  }
+  const container = document.getElementById('chartContainer');
+  const entryLowY = candleSeries.priceToCoordinate(lastChartLevels.entryZone.low);
+  const entryHighY = candleSeries.priceToCoordinate(lastChartLevels.entryZone.high);
+  const tpY = candleSeries.priceToCoordinate(lastChartLevels.takeProfit);
+  const slY = candleSeries.priceToCoordinate(lastChartLevels.stopLoss);
+  if ([entryLowY, entryHighY, tpY, slY].some(v => v === null || v === undefined)) {
+    profitEl.style.width = '0px'; lossEl.style.width = '0px'; entryEl.style.width = '0px';
+    return;
+  }
+  const lastTime = Math.floor(lastChartCandles[lastChartCandles.length - 1].time / 1000);
+  let nowX = chart.timeScale().timeToCoordinate(lastTime);
+  const rightEdge = container.clientWidth;
+  if (nowX === null || nowX === undefined) nowX = rightEdge * 0.7; // fallback if scrolled off-screen
+  const boxWidth = Math.max(0, rightEdge - nowX);
+  const entryMid = (entryLowY + entryHighY) / 2;
+
+  const profitTop = Math.min(entryMid, tpY);
+  const profitHeight = Math.max(1, Math.abs(entryMid - tpY));
+  profitEl.style.left = `${nowX}px`;
+  profitEl.style.top = `${profitTop}px`;
+  profitEl.style.height = `${profitHeight}px`;
+  profitEl.style.width = `${boxWidth}px`;
+
+  const lossTop = Math.min(entryMid, slY);
+  const lossHeight = Math.max(1, Math.abs(entryMid - slY));
+  lossEl.style.left = `${nowX}px`;
+  lossEl.style.top = `${lossTop}px`;
+  lossEl.style.height = `${lossHeight}px`;
+  lossEl.style.width = `${boxWidth}px`;
+
+  const entryTop = Math.min(entryLowY, entryHighY);
+  const entryHeight = Math.max(1, Math.abs(entryLowY - entryHighY));
+  entryEl.style.left = `${nowX}px`;
+  entryEl.style.top = `${entryTop}px`;
+  entryEl.style.height = `${entryHeight}px`;
+  entryEl.style.width = `${boxWidth}px`;
+}
+
+// ============================================================
+// DOM REFS + SHARED STATE
+// ============================================================
+const els = {
+  exchangeSelect: document.getElementById('exchangeSelect'),
+  symbolInput: document.getElementById('symbolInput'),
+  timeframeSelect: document.getElementById('timeframeSelect'),
+  confInput: document.getElementById('confInput'),
+  confVal: document.getElementById('confVal'),
+  watchBtn: document.getElementById('watchBtn'),
+  connStatus: document.getElementById('connStatus'),
+  connStatusText: document.getElementById('connStatusText'),
+  pairLabel: document.getElementById('pairLabel'),
+  signalEmptyBox: document.getElementById('signalEmptyBox'),
+  signalBody: document.getElementById('signalBody'),
+  directionHero: document.getElementById('directionHero'),
+  directionBadge: document.getElementById('directionBadge'),
+  confidenceNum: document.getElementById('confidenceNum'),
+  entryVal: document.getElementById('entryVal'),
+  slVal: document.getElementById('slVal'),
+  tpVal: document.getElementById('tpVal'),
+  rrVal: document.getElementById('rrVal'),
+  gaugeShort: document.getElementById('gaugeShort'),
+  gaugeLong: document.getElementById('gaugeLong'),
+  lastPrice: document.getElementById('lastPrice'),
+  scanDepthSelect: document.getElementById('scanDepthSelect'),
+  scanHorizonSelect: document.getElementById('scanHorizonSelect'),
+  autoRescanCheck: document.getElementById('autoRescanCheck'),
+  scanBtn: document.getElementById('scanBtn'),
+  scanStatus: document.getElementById('scanStatus'),
+  scanStatusLine: document.getElementById('scanStatusLine'),
+  longList: document.getElementById('longList'),
+  shortList: document.getElementById('shortList'),
+  longCount: document.getElementById('longCount'),
+  shortCount: document.getElementById('shortCount'),
+  shortPctLabel: document.getElementById('shortPctLabel'),
+  longPctLabel: document.getElementById('longPctLabel'),
+  certaintyNote: document.getElementById('certaintyNote'),
+  trackWatchBtn: document.getElementById('trackWatchBtn'),
+  favWatchBtn: document.getElementById('favWatchBtn'),
+  searchSymbolInput: document.getElementById('searchSymbolInput'),
+  checkCoinBtn: document.getElementById('checkCoinBtn'),
+  searchResultBox: document.getElementById('searchResultBox'),
+  trackedList: document.getElementById('trackedList'),
+  favoritesList: document.getElementById('favoritesList'),
+  watchCountdownVal: document.getElementById('watchCountdownVal'),
+};
+
+let pollTimer = null;
+let autoRescanTimer = null;
+let trackedRefreshTimer = null;
+let countdownTicker = null;
+let watchNextClose = null;
+const trackedCoins = []; // {key, exchangeKey, id, display, horizonValue, direction, originalScore, originalLevels, pinnedAt, currentScore, currentDirection, nextCloseTime}
+let lastWatchSnapshot = null; // holds the latest single-watch result so the Track button can pin it
+
+// Search: fetches ALL horizons for one coin at once, auto-refreshing every
+// 30s, instead of a single horizon that goes stale until the next scan.
+let currentSearchCoin = null; // {exchangeKey, id, display}
+let searchHorizonResults = {}; // horizonKey -> {longScore, shortScore, leadDirection, leadLevels, nextClose} | {error:true}
+let searchAutoRefreshTimer = null;
+
+// Favorites: up to 10 quick-access coins, session-only (resets if you
+// close or reload the page — there's no account/storage behind this).
+const FAVORITES_MAX = 10;
+const FAVORITES_HORIZON = '60m';
+const favoriteCoins = []; // {key, exchangeKey, id, display, score, direction}
+let favoritesRefreshTimer = null;
+
+// ============================================================
+// AI BRAIN — paper trading engine. Auto-opens simulated trades on your
+// Favorites list, checks live prices to see if they actually hit TP or
+// SL, feeds real outcomes into the same adaptive-weight ledger as
+// Tracked Signals, and enforces a hard daily loss circuit breaker.
+// Only runs while this tab is open — there is no way for a browser-only
+// tool to run in the background or between sessions.
+// ============================================================
+const PAPER_STARTING_BALANCE = 10000;
+const PAPER_RISK_PER_TRADE_PCT = 1;   // % of current virtual balance risked per trade
+const PAPER_DAILY_LOSS_CAP_PCT = 6;   // hard stop: no new trades once today's realized loss reaches this
+const PAPER_MIN_CONFIDENCE = 20;      // same calibrated threshold as the Watch panel
+
+let paperBalance = PAPER_STARTING_BALANCE;
+let paperDayKey = null;
+let paperDailyPnlPct = 0;
+const paperTrades = []; // newest first: {key, exchangeKey, id, display, horizonValue, direction, entry, stopLoss, takeProfit, positionSize, riskAmount, status, openedAt, closedAt, realizedPnlPct, voteSnapshot}
+let paperEngineOn = false;
+let paperEngineTimer = null;
+let paperCapAnnouncedForDay = null;
+const learningLog = []; // newest first: {ts, text, kind}
+
+function utcDayKey(ts = Date.now()) { return new Date(ts).toISOString().slice(0, 10); }
+function resetPaperDayIfNeeded() {
+  const today = utcDayKey();
+  if (paperDayKey !== today) { paperDayKey = today; paperDailyPnlPct = 0; }
+}
+function paperDailyCapHit() {
+  resetPaperDayIfNeeded();
+  return paperDailyPnlPct <= -PAPER_DAILY_LOSS_CAP_PCT;
+}
+function addLearningLog(text, kind) {
+  learningLog.unshift({ ts: Date.now(), text, kind });
+  if (learningLog.length > 150) learningLog.length = 150;
+  renderLearningLog();
+}
+
+async function openPaperTrade(exchangeKey, id, display, horizonValue, direction, levels, voteSnapshot) {
+  resetPaperDayIfNeeded();
+  if (paperDailyCapHit()) return false;
+  const key = `${exchangeKey}:${id}:${horizonValue}`;
+  if (paperTrades.some(p => p.key === key && p.status === 'open')) return false; // no duplicate open position
+
+  const riskAmount = paperBalance * (PAPER_RISK_PER_TRADE_PCT / 100);
+  const stopDistance = Math.abs(levels.entry - levels.stopLoss);
+  const positionSize = stopDistance ? riskAmount / stopDistance : 0;
+
+  paperTrades.unshift({
+    key, exchangeKey, id, display, horizonValue, direction,
+    entry: levels.entry, stopLoss: levels.stopLoss, takeProfit: levels.takeProfit,
+    positionSize, riskAmount, status: 'open', openedAt: Date.now(), closedAt: null,
+    realizedPnlPct: null, voteSnapshot,
+  });
+  addLearningLog(`📈 Opened paper ${direction} on ${display} · next ${HORIZON_CONFIG[horizonValue].label} · risking ${PAPER_RISK_PER_TRADE_PCT}% ($${riskAmount.toFixed(2)})`, 'info');
+  renderPaperTrading();
+  return true;
+}
+
+async function refreshPaperTrades() {
+  resetPaperDayIfNeeded();
+  const openTrades = paperTrades.filter(p => p.status === 'open');
+  for (const t of openTrades) {
+    try {
+      const candles = await fetchKlinesForHorizon(t.exchangeKey, t.id, t.horizonValue);
+      if (candles.length < 220) continue;
+      const sincePin = candles.filter(c => c.time >= t.openedAt);
+      const outcome = resolveOutcome(t.direction, { stopLoss: t.stopLoss, takeProfit: t.takeProfit }, sincePin);
+      if (outcome === 'open') continue;
+
+      const rewardPct = Math.abs(t.takeProfit - t.entry) / t.entry;
+      const riskPct = Math.abs(t.entry - t.stopLoss) / t.entry;
+      const rrMultiple = riskPct ? rewardPct / riskPct : 0;
+      const pnlPct = outcome === 'win' ? PAPER_RISK_PER_TRADE_PCT * rrMultiple : -PAPER_RISK_PER_TRADE_PCT;
+
+      t.status = outcome;
+      t.closedAt = Date.now();
+      t.realizedPnlPct = pnlPct;
+      paperBalance *= (1 + pnlPct / 100);
+      resetPaperDayIfNeeded();
+      paperDailyPnlPct += pnlPct;
+
+      recordOutcome(t.voteSnapshot, t.direction, outcome);
+      const emoji = outcome === 'win' ? '✅' : '❌';
+      addLearningLog(`${emoji} ${t.direction} ${t.display} ${outcome === 'win' ? 'hit take-profit' : 'hit stop-loss'} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%) — balance now $${paperBalance.toFixed(2)}`, outcome);
+    } catch (e) { /* leave open, try again next cycle */ }
+  }
+  renderPaperTrading();
+}
+
+// The brain picks its own universe: the most actively traded futures
+// coins on the selected exchange, refreshed periodically. No favoriting
+// required. Capped and cached because re-fetching the full ticker list
+// every cycle would burn through rate limits for no benefit.
+let brainUniverse = [];
+let brainUniverseFetchedAt = 0;
+const BRAIN_UNIVERSE_SIZE = 25;
+const BRAIN_UNIVERSE_TTL_MS = 30 * 60 * 1000;
+const BRAIN_MAX_OPEN_TRADES = 5;
+
+async function refreshBrainUniverse(exchangeKey) {
+  const fresh = Date.now() - brainUniverseFetchedAt < BRAIN_UNIVERSE_TTL_MS;
+  if (fresh && brainUniverse.length) return brainUniverse;
+  const tickers = await ADAPTERS[exchangeKey].fetchTickers(fetch);
+  brainUniverse = tickers
+    .sort((a, b) => b.volumeUsd - a.volumeUsd)
+    .slice(0, BRAIN_UNIVERSE_SIZE)
+    .map(t => ({ exchangeKey, id: t.id, display: t.display }));
+  brainUniverseFetchedAt = Date.now();
+  addLearningLog(`🔍 Picked its own watchlist: top ${brainUniverse.length} most-traded futures coins on ${EXCHANGES[exchangeKey].label}`, 'info');
+  return brainUniverse;
+}
+
+async function runAiBrainScan() {
+  if (!paperEngineOn) return;
+  resetPaperDayIfNeeded();
+  if (paperDailyCapHit()) {
+    // Announce the circuit breaker once per day, not on every 60s cycle.
+    if (!paperCapAnnouncedForDay || paperCapAnnouncedForDay !== paperDayKey) {
+      paperCapAnnouncedForDay = paperDayKey;
+      addLearningLog(`🛑 Daily loss limit of -${PAPER_DAILY_LOSS_CAP_PCT}% reached (${paperDailyPnlPct.toFixed(2)}%) — no new trades until the next UTC day. Open trades still being watched.`, 'loss');
+    }
+    renderPaperTrading();
+    return;
+  }
+
+  const openCount = paperTrades.filter(t => t.status === 'open').length;
+  if (openCount >= BRAIN_MAX_OPEN_TRADES) { renderPaperTrading(); return; }
+
+  const exchangeKey = els.exchangeSelect.value;
+  let universe;
+  try {
+    universe = await refreshBrainUniverse(exchangeKey);
+  } catch (e) {
+    addLearningLog(`⚠️ Couldn't load the coin list from ${EXCHANGES[exchangeKey].label}: ${e.message || e}`, 'loss');
+    return;
+  }
+
+  let opened = 0;
+  for (const coin of universe) {
+    if (paperDailyCapHit()) break;
+    if (openCount + opened >= BRAIN_MAX_OPEN_TRADES) break;
+    try {
+      const candles = await fetchKlinesForHorizon(coin.exchangeKey, coin.id, FAVORITES_HORIZON);
+      if (candles.length < 220) continue;
+      const ind = computeIndicators(candles);
+      const i = candles.length - 1;
+      const signal = evaluate(candles, ind, i, PAPER_MIN_CONFIDENCE);
+      if (!signal) continue;
+      const entry = candles[i].close;
+      const atrVal = ind.atrArr[i];
+      const levels = computeLevels(signal.direction, entry, atrVal, FAVORITES_HORIZON);
+      const votes = runStrategies(candles, ind, i);
+      const didOpen = await openPaperTrade(coin.exchangeKey, coin.id, coin.display, FAVORITES_HORIZON, signal.direction, levels, votes);
+      if (didOpen) opened++;
+      await new Promise(r => setTimeout(r, 120)); // pace requests so we don't trip exchange rate limits
+    } catch (e) { /* skip this coin this cycle */ }
+  }
+  if (!opened) addLearningLog(`👀 Scanned ${universe.length} coins — nothing cleared the ${PAPER_MIN_CONFIDENCE}% confidence bar this cycle. Sitting out is a decision too.`, 'info');
+}
+
+function toggleAiBrain() {
+  paperEngineOn = !paperEngineOn;
+  if (paperEngineOn) {
+    addLearningLog(`🟢 AI Brain started — it picks its own coins from the most-traded futures on ${EXCHANGES[els.exchangeSelect.value].label}, risking ${PAPER_RISK_PER_TRADE_PCT}%/trade, max ${BRAIN_MAX_OPEN_TRADES} open at once, daily stop at -${PAPER_DAILY_LOSS_CAP_PCT}%`, 'info');
+    runAiBrainScan();
+    refreshPaperTrades();
+    paperEngineTimer = setInterval(() => { refreshPaperTrades(); runAiBrainScan(); }, 60000);
+  } else {
+    addLearningLog('🔴 AI Brain paused', 'info');
+    if (paperEngineTimer) { clearInterval(paperEngineTimer); paperEngineTimer = null; }
+  }
+  renderPaperTrading();
+}
+function resetPaperAccount() {
+  paperBalance = PAPER_STARTING_BALANCE;
+  paperDayKey = null;
+  paperDailyPnlPct = 0;
+  paperTrades.length = 0;
+  addLearningLog('♻️ Paper account reset to $' + PAPER_STARTING_BALANCE.toLocaleString(), 'info');
+  renderPaperTrading();
+}
+
+els.confInput.addEventListener('input', () => { els.confVal.textContent = els.confInput.value; });
+els.watchBtn.addEventListener('click', startWatching);
+els.scanBtn.addEventListener('click', () => runScan());
+els.checkCoinBtn.addEventListener('click', () => checkCoin());
+{
+  const aiToggle = document.getElementById('aiBrainToggleBtn');
+  const paperReset = document.getElementById('paperResetBtn');
+  if (aiToggle) aiToggle.addEventListener('click', toggleAiBrain);
+  if (paperReset) paperReset.addEventListener('click', resetPaperAccount);
+}
+els.autoRescanCheck.addEventListener('change', () => {
+  if (autoRescanTimer) { clearInterval(autoRescanTimer); autoRescanTimer = null; }
+  if (els.autoRescanCheck.checked) autoRescanTimer = setInterval(() => runScan(), 5 * 60 * 1000);
+});
+
+function setStatus(state, msg) {
+  els.connStatus.classList.remove('live', 'error');
+  if (state === 'live') { els.connStatus.classList.add('live'); els.connStatusText.textContent = 'live'; }
+  else if (state === 'error') { els.connStatus.classList.add('error'); els.connStatusText.textContent = msg ? `error: ${msg}` : 'error'; }
+  else { els.connStatusText.textContent = state; }
+}
+function fmt(n) {
+  if (n === null || n === undefined || Number.isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  const decimals = abs < 1 ? 6 : 4; // always at least 4 decimals, 6 for sub-$1 coins
+  return Number(n).toFixed(decimals);
+}
+function priceDecimals(price) {
+  return Math.abs(price) < 1 ? 6 : 4;
+}
+function minMoveForDecimals(decimals) {
+  return decimals === 6 ? 0.000001 : 0.0001; // avoids float noise from Math.pow(10, -n)
+}
+function formatCountdown(ms) {
+  if (ms === null || ms === undefined || ms <= 0) return 'closing...';
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+function computeNextCloseTimeForHorizon(candles, horizonKey) {
+  const config = HORIZON_CONFIG[horizonKey];
+  const durationMs = config.resampleFrom
+    ? config.groupSize * 15 * 60 * 1000
+    : { '15m': 15, '30m': 30, '1h': 60, '4h': 240, '1d': 1440 }[config.native] * 60 * 1000;
+  const last = candles[candles.length - 1];
+  return last.time + durationMs;
+}
+
+// A single 1-second ticker keeps every visible countdown (watch panel,
+// search table, tracked rows) live without re-fetching any data.
+function tickCountdowns() {
+  if (els.watchCountdownVal) els.watchCountdownVal.textContent = watchNextClose ? formatCountdown(watchNextClose - Date.now()) : '—';
+  if (currentSearchCoin) {
+    HORIZON_ORDER.forEach(hz => {
+      const cell = document.getElementById(`search-countdown-${hz}`);
+      const r = searchHorizonResults[hz];
+      if (cell && r && !r.error) cell.textContent = formatCountdown(r.nextClose - Date.now());
+    });
+  }
+  if (trackedCoins.length) renderTrackedList();
+}
+countdownTicker = setInterval(tickCountdowns, 1000);
+
+// ============================================================
+// CERTAINTY LABEL — turns two raw scores into a plain-English read
+// ============================================================
+function classifyCertainty(longScore, shortScore) {
+  const gap = Math.abs(longScore - shortScore);
+  const top = Math.max(longScore, shortScore);
+  if (top < 20) return { label: 'Uncertain — no strategy has much conviction right now', cls: '' };
+  if (gap < 10) return { label: 'Uncertain — long and short are close, no clear lean', cls: '' };
+  if (longScore > shortScore) return { label: `Leans LONG (${(gap).toFixed(0)}pt gap over short)`, cls: 'leans-long' };
+  return { label: `Leans SHORT (${(gap).toFixed(0)}pt gap over long)`, cls: 'leans-short' };
+}
+
+// ============================================================
+// SINGLE-SYMBOL WATCH
+// ============================================================
+function startWatching() {
+  if (pollTimer) clearInterval(pollTimer);
+  const exchangeKey = els.exchangeSelect.value;
+  const display = els.symbolInput.value.trim().toUpperCase();
+  if (!display.includes('/')) { alert('Symbol should look like BTC/USDT'); return; }
+  const id = displayToId(exchangeKey, display);
+  const horizonKey = els.timeframeSelect.value;
+  const minConfidence = Number(els.confInput.value);
+
+  els.pairLabel.textContent = `${EXCHANGES[exchangeKey].label} · ${display} · next ${HORIZON_CONFIG[horizonKey].label}`;
+  setStatus('connecting');
+
+  const tick = () => pollOnce(exchangeKey, id, display, horizonKey, minConfidence);
+  tick();
+  // Poll every 10s regardless of horizon so the chart's in-progress candle
+  // (and countdown) actually feels live, instead of sitting still for
+  // minutes between refreshes.
+  pollTimer = setInterval(tick, 10000);
+}
+
+async function pollOnce(exchangeKey, id, display, horizonKey, minConfidence) {
+  try {
+    const candles = await fetchKlinesForHorizon(exchangeKey, id, horizonKey);
+    if (candles.length < 220) { setStatus('error', 'not enough history returned'); return; }
+    const ind = computeIndicators(candles);
+    const i = candles.length - 1;
+    const votes = runStrategies(candles, ind, i);
+    const signal = evaluate(candles, ind, i, minConfidence);
+
+    setStatus('live');
+    watchNextClose = computeNextCloseTimeForHorizon(candles, horizonKey);
+    renderWatch(candles, ind, i, votes, signal, exchangeKey, id, display, horizonKey);
+  } catch (e) {
+    setStatus('error', e.message || String(e));
+  }
+}
+
+function renderWatch(candles, ind, i, votes, signal, exchangeKey, id, display, horizonKey) {
+  els.lastPrice.textContent = fmt(candles[i].close);
+
+  const { longScore, shortScore } = scoreBothDirections(votes);
+  const totalForGauge = Math.max(longScore + shortScore, 1);
+  els.gaugeShort.style.width = `${(shortScore / totalForGauge) * 100}%`;
+  els.gaugeLong.style.width = `${(longScore / totalForGauge) * 100}%`;
+  els.shortPctLabel.textContent = `SHORT ${shortScore.toFixed(0)}%`;
+  els.longPctLabel.textContent = `LONG ${longScore.toFixed(0)}%`;
+
+  const certainty = classifyCertainty(longScore, shortScore);
+  els.certaintyNote.textContent = certainty.label;
+  els.certaintyNote.className = `certainty-note ${certainty.cls}`;
+
+  const entry = candles[i].close;
+  const atrVal = ind.atrArr[i];
+  const leadDirection = longScore >= shortScore ? 'LONG' : 'SHORT';
+  const leadLevels = computeLevels(leadDirection, entry, atrVal, horizonKey);
+
+  lastWatchSnapshot = {
+    exchangeKey, id, display, horizonValue: horizonKey,
+    direction: leadDirection,
+    score: leadDirection === 'LONG' ? longScore : shortScore,
+    levels: leadLevels,
+  };
+  els.trackWatchBtn.style.display = 'inline-block';
+  els.favWatchBtn.style.display = 'inline-block';
+  els.favWatchBtn.textContent = isFavorite(exchangeKey, id) ? '★ Favorited' : '☆ Favorite';
+
+  // Levels shown (entry zone, SL, TP) always come from computeLevels — a
+  // suggested LIMIT pullback zone scaled to the chosen horizon — even when
+  // a formal "signal" fires. The signal object only supplies direction,
+  // confidence, and its reasons; it no longer dictates price levels.
+  let displayLevels = leadLevels;
+  if (signal) {
+    els.signalEmptyBox.classList.add('hidden');
+    els.signalBody.classList.remove('hidden');
+    displayLevels = computeLevels(signal.direction, entry, atrVal, horizonKey);
+    const dirClass = signal.direction === 'LONG' ? 'long' : 'short';
+    els.directionHero.className = `direction-hero ${dirClass}`;
+    els.directionBadge.textContent = signal.direction;
+    els.confidenceNum.textContent = `${signal.confidence.toFixed(0)}%`;
+    els.entryVal.textContent = `${fmt(displayLevels.entryZone.low)} – ${fmt(displayLevels.entryZone.high)}`;
+    els.slVal.textContent = fmt(displayLevels.stopLoss);
+    els.tpVal.textContent = fmt(displayLevels.takeProfit);
+    const risk = Math.abs(displayLevels.entry - displayLevels.stopLoss);
+    const reward = Math.abs(displayLevels.takeProfit - displayLevels.entry);
+    els.rrVal.textContent = risk ? `1 : ${(reward / risk).toFixed(2)}` : '—';
+  } else {
+    els.signalEmptyBox.classList.remove('hidden');
+    els.signalBody.classList.add('hidden');
+  }
+
+  // Chart always shows the current leading direction's levels — even when
+  // no formal "signal" has cleared the confidence threshold — so the box
+  // and lines are never just blank while you're watching a coin.
+  // Wrapped defensively: a chart-library hiccup should never be able to
+  // abort the rest of this render (prices, gauge, countdown already set
+  // above) — worst case the chart itself just doesn't update that tick.
+  try {
+    updateChart(candles, leadDirection, displayLevels);
+  } catch (e) {
+    console.error('Chart update failed (rest of the panel still updated normally):', e);
+  }
+}
+els.trackWatchBtn.addEventListener('click', () => {
+  if (lastWatchSnapshot) trackCoin(lastWatchSnapshot);
+});
+els.favWatchBtn.addEventListener('click', () => {
+  if (lastWatchSnapshot) {
+    toggleFavorite(lastWatchSnapshot.exchangeKey, lastWatchSnapshot.id, lastWatchSnapshot.display);
+    els.favWatchBtn.textContent = isFavorite(lastWatchSnapshot.exchangeKey, lastWatchSnapshot.id) ? '★ Favorited' : '☆ Favorite';
+  }
+});
+
+// ============================================================
+// SEARCH ANY COIN — works regardless of scanner top-N depth
+// ============================================================
+async function checkCoin() {
+  const exchangeKey = els.exchangeSelect.value;
+  const raw = els.searchSymbolInput.value.trim().toUpperCase();
+  if (!raw) { alert('Type a coin, e.g. XRP or XRP/USDT'); return; }
+  const display = raw.includes('/') ? raw : `${raw}/USDT`;
+  const id = displayToId(exchangeKey, display);
+
+  if (searchAutoRefreshTimer) { clearInterval(searchAutoRefreshTimer); searchAutoRefreshTimer = null; }
+  currentSearchCoin = { exchangeKey, id, display };
+  searchHorizonResults = {};
+
+  els.checkCoinBtn.disabled = true;
+  els.checkCoinBtn.textContent = 'Checking...';
+  try {
+    await refreshSearchAllHorizons();
+    if (searchAutoRefreshTimer) clearInterval(searchAutoRefreshTimer);
+    searchAutoRefreshTimer = setInterval(refreshSearchAllHorizons, 30000);
+  } catch (e) {
+    els.searchResultBox.classList.remove('hidden');
+    els.searchResultBox.innerHTML = `<p style="color:var(--short); font-size:13px;">Couldn't check ${display} on ${EXCHANGES[exchangeKey].label}: ${e.message || e}</p>`;
+    currentSearchCoin = null;
+  } finally {
+    els.checkCoinBtn.disabled = false;
+    els.checkCoinBtn.textContent = 'Check Coin';
+  }
+}
+
+// Fetches all 6 horizons for the current search coin in parallel (cheap —
+// it's one coin, not a market scan) and re-renders the table. Runs once
+// immediately, then every 30 seconds for as long as this coin is being
+// searched, so the read never goes stale until you search something else.
+async function refreshSearchAllHorizons() {
+  if (!currentSearchCoin) return;
+  const { exchangeKey, id } = currentSearchCoin;
+  const results = {};
+  await Promise.all(HORIZON_ORDER.map(async (hz) => {
+    try {
+      const candles = await fetchKlinesForHorizon(exchangeKey, id, hz);
+      if (candles.length < 220) { results[hz] = { error: true, message: 'not enough history' }; return; }
+      const ind = computeIndicators(candles);
+      const i = candles.length - 1;
+      const votes = runStrategies(candles, ind, i);
+      const { longScore, shortScore } = scoreBothDirections(votes);
+      const entry = candles[i].close;
+      const atrVal = ind.atrArr[i];
+      const leadDirection = longScore >= shortScore ? 'LONG' : 'SHORT';
+      results[hz] = {
+        longScore, shortScore, leadDirection,
+        leadLevels: computeLevels(leadDirection, entry, atrVal, hz),
+        nextClose: computeNextCloseTimeForHorizon(candles, hz),
+        lastPrice: entry,
+      };
+    } catch (e) {
+      results[hz] = { error: true, message: e.message || String(e) };
+    }
+  }));
+  searchHorizonResults = results;
+  renderSearchTable();
+}
+
+function renderSearchTable() {
+  if (!currentSearchCoin) return;
+  const { exchangeKey, id, display } = currentSearchCoin;
+  els.searchResultBox.classList.remove('hidden');
+
+  let rows = '';
+  HORIZON_ORDER.forEach(hz => {
+    const r = searchHorizonResults[hz];
+    const label = HORIZON_CONFIG[hz].label;
+    if (!r || r.error) {
+      rows += `<tr><td class="hz-name">${label}</td><td colspan="5" style="color:var(--text-dimmer);">${r ? r.message : 'loading...'}</td></tr>`;
+      return;
+    }
+    const dirColor = r.leadDirection === 'LONG' ? 'var(--long)' : 'var(--short)';
+    rows += `
+      <tr>
+        <td><span class="hz-name">${label}</span><div class="mini-countdown" id="search-countdown-${hz}">${formatCountdown(r.nextClose - Date.now())}</div></td>
+        <td><div class="mini-bar-row"><span class="mini-bar-label long">${r.longScore.toFixed(0)}%</span><div class="prob-bar-track"><div class="prob-bar-fill" style="width:${Math.min(100, r.longScore)}%; background:var(--long);"></div></div></div></td>
+        <td><div class="mini-bar-row"><span class="mini-bar-label short">${r.shortScore.toFixed(0)}%</span><div class="prob-bar-track"><div class="prob-bar-fill" style="width:${Math.min(100, r.shortScore)}%; background:var(--short);"></div></div></div></td>
+        <td class="mono" style="color:${dirColor};">${r.leadDirection}</td>
+        <td class="mono">${fmt(r.leadLevels.entryZone.low)}–${fmt(r.leadLevels.entryZone.high)}</td>
+        <td class="mono" style="color:var(--short);">${fmt(r.leadLevels.stopLoss)}</td>
+        <td class="mono" style="color:var(--long);">${fmt(r.leadLevels.takeProfit)}</td>
+      </tr>`;
+  });
+
+  const fav = isFavorite(exchangeKey, id);
+  els.searchResultBox.innerHTML = `
+    <div class="search-result-head">
+      <span class="sym">${display} <span style="color:var(--text-dimmer); font-weight:500; font-size:12px;">· ${EXCHANGES[exchangeKey].label} · auto-updates every 30s</span></span>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-secondary btn-small" id="favSearchBtn">${fav ? '★ Favorited' : '☆ Add to Favorites'}</button>
+        <button class="btn btn-secondary btn-small" id="trackSearchBtn">📌 Track</button>
+      </div>
+    </div>
+    <table class="horizon-table">
+      <thead><tr><th>Horizon</th><th>Long</th><th>Short</th><th>Leans</th><th>Entry Zone</th><th>Stop Loss</th><th>Take Profit</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+  document.getElementById('favSearchBtn').addEventListener('click', () => toggleFavorite(exchangeKey, id, display));
+  document.getElementById('trackSearchBtn').addEventListener('click', () => {
+    // Tracks using the 60-min read by default — the most commonly watched horizon
+    const r = searchHorizonResults['60m'] || Object.values(searchHorizonResults).find(v => v && !v.error);
+    if (!r) { alert('Wait for data to load before tracking.'); return; }
+    trackCoin({ exchangeKey, id, display, horizonValue: '60m', direction: r.leadDirection, score: r.leadDirection === 'LONG' ? r.longScore : r.shortScore, levels: r.leadLevels });
+  });
+}
+
+// ============================================================
+// FAVORITES — up to 10 quick-access coins with a live compact read
+// ============================================================
+function favoriteKey(exchangeKey, id) { return `${exchangeKey}:${id}`; }
+function isFavorite(exchangeKey, id) { return favoriteCoins.some(f => f.key === favoriteKey(exchangeKey, id)); }
+
+function toggleFavorite(exchangeKey, id, display) {
+  const key = favoriteKey(exchangeKey, id);
+  const idx = favoriteCoins.findIndex(f => f.key === key);
+  if (idx >= 0) {
+    favoriteCoins.splice(idx, 1);
+  } else {
+    if (favoriteCoins.length >= FAVORITES_MAX) { alert(`You can favorite up to ${FAVORITES_MAX} coins — remove one first.`); return; }
+    favoriteCoins.push({ key, exchangeKey, id, display, score: null, direction: null });
+    refreshFavorites();
+  }
+  if (favoriteCoins.length && !favoritesRefreshTimer) favoritesRefreshTimer = setInterval(refreshFavorites, 45000);
+  if (!favoriteCoins.length && favoritesRefreshTimer) { clearInterval(favoritesRefreshTimer); favoritesRefreshTimer = null; }
+  renderFavoritesList();
+  if (currentSearchCoin && currentSearchCoin.exchangeKey === exchangeKey && currentSearchCoin.id === id) renderSearchTable();
+}
+
+async function refreshFavorites() {
+  for (const f of favoriteCoins) {
+    try {
+      const candles = await fetchKlinesForHorizon(f.exchangeKey, f.id, FAVORITES_HORIZON);
+      if (candles.length < 220) continue;
+      const ind = computeIndicators(candles);
+      const i = candles.length - 1;
+      const votes = runStrategies(candles, ind, i);
+      const { longScore, shortScore } = scoreBothDirections(votes);
+      f.direction = longScore >= shortScore ? 'LONG' : 'SHORT';
+      f.score = f.direction === 'LONG' ? longScore : shortScore;
+    } catch (e) { /* leave the previous reading if this refresh fails */ }
+  }
+  renderFavoritesList();
+}
+
+function renderFavoritesList() {
+  if (!favoriteCoins.length) {
+    els.favoritesList.innerHTML = '<p style="color:var(--text-dimmer); font-size:12.5px; padding:6px 4px;">No favorites yet — star a coin from Search or the scanner (up to 10).</p>';
+    return;
+  }
+  els.favoritesList.innerHTML = '';
+  favoriteCoins.forEach(f => {
+    const dirColor = f.direction === 'LONG' ? 'var(--long)' : f.direction === 'SHORT' ? 'var(--short)' : 'var(--text-dimmer)';
+    const row = document.createElement('div');
+    row.className = 'tracked-row';
+    row.innerHTML = `
+      <div><div class="sym">${f.display} <span style="font-weight:500; color:var(--text-dimmer); font-size:11px;">· ${EXCHANGES[f.exchangeKey].label} · 60-min read</span></div></div>
+      <div style="color:${dirColor}; font-weight:700; font-size:13px; font-family:var(--font-mono);">${f.score !== null ? f.direction + ' ' + f.score.toFixed(0) + '%' : 'loading...'}</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-secondary btn-small fav-open-btn">Search</button>
+        <button class="tracked-remove fav-remove-btn" title="Remove favorite">×</button>
+      </div>
+    `;
+    row.querySelector('.fav-open-btn').addEventListener('click', () => {
+      els.exchangeSelect.value = f.exchangeKey;
+      els.searchSymbolInput.value = f.display;
+      checkCoin();
+    });
+    row.querySelector('.fav-remove-btn').addEventListener('click', () => toggleFavorite(f.exchangeKey, f.id, f.display));
+    els.favoritesList.appendChild(row);
+  });
+}
+
+// ============================================================
+// TRACKED SIGNALS — pins a coin's original call and keeps
+// refreshing its current status so it never just vanishes
+// ============================================================
+async function trackCoin(snapshot) {
+  const key = `${snapshot.exchangeKey}:${snapshot.id}:${snapshot.horizonValue}`;
+  if (trackedCoins.some(t => t.key === key)) return; // already tracked
+  // Snapshot which strategies voted for this call right now, so that when
+  // it resolves we know exactly which ones to credit or blame.
+  let voteSnapshot = [];
+  try {
+    const candles = await fetchKlinesForHorizon(snapshot.exchangeKey, snapshot.id, snapshot.horizonValue);
+    if (candles.length >= 220) voteSnapshot = runStrategies(candles, computeIndicators(candles), candles.length - 1);
+  } catch (e) { /* pin still works, just won't feed the learning ledger */ }
+  trackedCoins.push({
+    key, exchangeKey: snapshot.exchangeKey, id: snapshot.id, display: snapshot.display,
+    horizonValue: snapshot.horizonValue, direction: snapshot.direction,
+    originalScore: snapshot.score, originalLevels: snapshot.levels,
+    pinnedAt: Date.now(), currentScore: snapshot.score, currentDirection: snapshot.direction,
+    nextCloseTime: null, voteSnapshot, outcome: 'open',
+  });
+  renderTrackedList();
+  if (!trackedRefreshTimer) { refreshTrackedCoins(); trackedRefreshTimer = setInterval(refreshTrackedCoins, 60000); }
+}
+function untrackCoin(key) {
+  const idx = trackedCoins.findIndex(t => t.key === key);
+  if (idx >= 0) trackedCoins.splice(idx, 1);
+  renderTrackedList();
+  if (trackedCoins.length === 0 && trackedRefreshTimer) { clearInterval(trackedRefreshTimer); trackedRefreshTimer = null; }
+}
+async function refreshTrackedCoins() {
+  for (const t of trackedCoins) {
+    if (t.outcome !== 'open') continue; // already resolved, stop spending fetches on it
+    try {
+      const candles = await fetchKlinesForHorizon(t.exchangeKey, t.id, t.horizonValue);
+      if (candles.length < 220) continue;
+      const ind = computeIndicators(candles);
+      const i = candles.length - 1;
+      const votes = runStrategies(candles, ind, i);
+      const { longScore, shortScore } = scoreBothDirections(votes);
+      t.currentDirection = longScore >= shortScore ? 'LONG' : 'SHORT';
+      t.currentScore = t.currentDirection === 'LONG' ? longScore : shortScore;
+      t.nextCloseTime = computeNextCloseTimeForHorizon(candles, t.horizonValue);
+
+      const sincePin = candles.filter(c => c.time >= t.pinnedAt);
+      const outcome = resolveOutcome(t.direction, t.originalLevels, sincePin);
+      if (outcome !== 'open') {
+        t.outcome = outcome;
+        recordOutcome(t.voteSnapshot, t.direction, outcome);
+      }
+    } catch (e) { /* leave previous values if a refresh fails */ }
+  }
+  renderTrackedList();
+}
+function trackedStatus(t) {
+  if (t.outcome === 'win') return { label: '✅ WIN (hit TP)', cls: 'valid' };
+  if (t.outcome === 'loss') return { label: '❌ LOSS (hit SL)', cls: 'flipped' };
+  if (t.currentDirection !== t.direction) return { label: '🔄 Flipped', cls: 'flipped' };
+  if (t.currentScore < t.originalScore * 0.7) return { label: '⚠️ Weakening', cls: 'weak' };
+  return { label: '✅ Still valid', cls: 'valid' };
+}
+function renderTrackedList() {
+  if (!trackedCoins.length) {
+    els.trackedList.innerHTML = '<p style="color:var(--text-dimmer); font-size:12.5px; padding:6px 4px;">No coins tracked yet — click "📌 Track" on any signal to pin it here.</p>';
+    return;
+  }
+  els.trackedList.innerHTML = '';
+  trackedCoins.forEach(t => {
+    const status = trackedStatus(t);
+    const pinnedMinsAgo = Math.max(0, Math.round((Date.now() - t.pinnedAt) / 60000));
+    const countdown = t.nextCloseTime ? formatCountdown(t.nextCloseTime - Date.now()) : '—';
+    const row = document.createElement('div');
+    row.className = 'tracked-row';
+    row.innerHTML = `
+      <div>
+        <div class="sym">${t.display} <span style="font-weight:500; color:var(--text-dimmer); font-size:11px;">· ${EXCHANGES[t.exchangeKey].label} · next ${HORIZON_CONFIG[t.horizonValue].label} · candle closes in ${countdown}</span></div>
+        <div class="pinned-at">pinned ${pinnedMinsAgo}m ago · original: ${t.direction} ${t.originalScore.toFixed(0)}% @ ${fmt(t.originalLevels.entryZone.low)}–${fmt(t.originalLevels.entryZone.high)} (SL ${fmt(t.originalLevels.stopLoss)} / TP ${fmt(t.originalLevels.takeProfit)})</div>
+      </div>
+      <div class="tracked-compare">
+        <div class="col"><span class="col-label">Original</span><span>${t.direction} ${t.originalScore.toFixed(0)}%</span></div>
+        <div class="col"><span class="col-label">Current</span><span style="color:${t.currentDirection === 'LONG' ? 'var(--long)' : 'var(--short)'}">${t.currentDirection} ${t.currentScore.toFixed(0)}%</span></div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="tracked-status ${status.cls}">${status.label}</span>
+        <button class="tracked-remove" title="Stop tracking">×</button>
+      </div>
+    `;
+    row.querySelector('.tracked-remove').addEventListener('click', () => untrackCoin(t.key));
+    els.trackedList.appendChild(row);
+  });
+}
+
+function renderStrategyPerformance() {
+  const container = document.getElementById('strategyPerfList');
+  if (!container) return;
+  container.innerHTML = '';
+  Object.keys(STRATEGY_WEIGHTS).forEach(name => {
+    const perf = strategyPerformance[name];
+    const total = perf ? perf.wins + perf.losses : 0;
+    const base = STRATEGY_WEIGHTS[name];
+    const adjusted = getAdjustedWeight(name);
+    const changed = Math.abs(adjusted - base) > 0.005;
+    const row = document.createElement('div');
+    row.className = 'perf-row';
+    row.innerHTML = `
+      <span class="perf-name">${name}</span>
+      <span class="perf-record">${total >= 3 ? `${perf.wins}W / ${perf.losses}L` : total > 0 ? `${perf.wins}W / ${perf.losses}L (need 3+ to adjust)` : 'no resolved trades yet'}</span>
+      <span class="perf-weight ${changed ? (adjusted > base ? 'up' : 'down') : ''}">${base.toFixed(2)} ${changed ? `→ ${adjusted.toFixed(2)}` : ''}</span>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function renderLearningLog() {
+  const container = document.getElementById('learningLogList');
+  if (!container) return;
+  if (!learningLog.length) {
+    container.innerHTML = '<p style="color:var(--text-dimmer); font-size:12.5px; padding:6px 4px;">Nothing yet — start the AI Brain to see its activity here.</p>';
+    return;
+  }
+  container.innerHTML = '';
+  learningLog.slice(0, 40).forEach(entry => {
+    const row = document.createElement('div');
+    row.className = `log-row log-${entry.kind}`;
+    const time = new Date(entry.ts).toLocaleTimeString();
+    row.innerHTML = `<span class="log-time">${time}</span><span class="log-text">${entry.text}</span>`;
+    container.appendChild(row);
+  });
+}
+
+function renderPaperTrading() {
+  const statusPill = document.getElementById('aiBrainStatusPill');
+  const toggleBtn = document.getElementById('aiBrainToggleBtn');
+  if (statusPill) {
+    resetPaperDayIfNeeded();
+    const capHit = paperDailyCapHit();
+    statusPill.textContent = !paperEngineOn ? '⚪ Paused' : capHit ? '🛑 Daily limit reached — resumes next UTC day' : `🟢 Active — scanning ${brainUniverse.length || BRAIN_UNIVERSE_SIZE} coins on its own`;
+  }
+  if (toggleBtn) toggleBtn.textContent = paperEngineOn ? 'Stop AI Brain' : 'Start AI Brain';
+
+  const totalPnlPct = ((paperBalance - PAPER_STARTING_BALANCE) / PAPER_STARTING_BALANCE) * 100;
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setText('paperBalanceVal', `$${paperBalance.toFixed(2)}`);
+  setText('paperTotalPnlVal', `${totalPnlPct >= 0 ? '+' : ''}${totalPnlPct.toFixed(2)}%`);
+  setText('paperDailyPnlVal', `${paperDailyPnlPct >= 0 ? '+' : ''}${paperDailyPnlPct.toFixed(2)}% / -${PAPER_DAILY_LOSS_CAP_PCT}% limit`);
+
+  const closed = paperTrades.filter(t => t.status !== 'open');
+  const wins = closed.filter(t => t.status === 'win');
+  setText('paperWinRateVal', closed.length ? `${wins.length}/${closed.length} (${(100 * wins.length / closed.length).toFixed(0)}%)` : 'no closed trades yet');
+
+  const riskBar = document.getElementById('paperRiskBarFill');
+  if (riskBar) {
+    const usedPct = Math.min(100, Math.max(0, (-paperDailyPnlPct / PAPER_DAILY_LOSS_CAP_PCT) * 100));
+    riskBar.style.width = `${usedPct}%`;
+  }
+
+  const tradesContainer = document.getElementById('paperTradesList');
+  if (tradesContainer) {
+    if (!paperTrades.length) {
+      tradesContainer.innerHTML = '<p style="color:var(--text-dimmer); font-size:12.5px; padding:6px 4px;">No paper trades yet — start the AI Brain with at least one Favorite coin.</p>';
+    } else {
+      tradesContainer.innerHTML = '';
+      paperTrades.slice(0, 30).forEach(t => {
+        const row = document.createElement('div');
+        const dirClass = t.direction === 'LONG' ? 'long' : 'short';
+        const statusLabel = t.status === 'open' ? '⏳ Open' : t.status === 'win' ? '✅ Win' : '❌ Loss';
+        row.className = `tracked-row`;
+        row.innerHTML = `
+          <div>
+            <div class="sym">${t.display} <span style="font-weight:500; color:var(--text-dimmer); font-size:11px;">· ${t.direction} · entry ${fmt(t.entry)}</span></div>
+            <div class="pinned-at">opened ${new Date(t.openedAt).toLocaleTimeString()}${t.closedAt ? ` · closed ${new Date(t.closedAt).toLocaleTimeString()}` : ''}</div>
+          </div>
+          <div class="tracked-compare">
+            <div class="col"><span class="col-label">Status</span><span>${statusLabel}</span></div>
+            <div class="col"><span class="col-label">P&L</span><span style="color:${t.realizedPnlPct == null ? 'var(--text-dim)' : t.realizedPnlPct >= 0 ? 'var(--long)' : 'var(--short)'}">${t.realizedPnlPct == null ? '—' : `${t.realizedPnlPct >= 0 ? '+' : ''}${t.realizedPnlPct.toFixed(2)}%`}</span></div>
+          </div>
+        `;
+        tradesContainer.appendChild(row);
+      });
+    }
+  }
+}
+
+// ============================================================
+// MARKET SCANNER — two independent ranked lists (long/short)
+// ============================================================
+async function runScan() {
+  const exchangeKey = els.exchangeSelect.value;
+  const topN = Number(els.scanDepthSelect.value);
+  const horizonKey = els.scanHorizonSelect.value;
+  const horizonLabel = HORIZON_CONFIG[horizonKey].label;
+
+  els.scanBtn.disabled = true;
+  els.scanStatusLine.classList.add('loading');
+  els.scanStatus.textContent = `fetching ${EXCHANGES[exchangeKey].label} futures coin list...`;
+
+  try {
+    const tickers = await ADAPTERS[exchangeKey].fetchTickers(fetch);
+    const top = tickers.sort((a, b) => b.volumeUsd - a.volumeUsd).slice(0, topN);
+
+    const results = [];
+    let doneCount = 0;
+    const concurrency = topN > 100 ? 3 : 6;
+    const pacingMs = topN > 100 ? 150 : 0;
+    let idx = 0;
+
+    async function worker() {
+      while (idx < top.length) {
+        const coin = top[idx++];
+        try {
+          const candles = await fetchKlinesForHorizon(exchangeKey, coin.id, horizonKey);
+          if (candles.length >= 220) {
+            const ind = computeIndicators(candles);
+            const i = candles.length - 1;
+            const votes = runStrategies(candles, ind, i);
+            const { longScore, shortScore } = scoreBothDirections(votes);
+            const entry = candles[i].close;
+            const atrVal = ind.atrArr[i];
+            results.push({
+              display: coin.display,
+              id: coin.id,
+              exchangeKey,
+              horizonValue: horizonKey,
+              longScore, shortScore,
+              longLevels: computeLevels('LONG', entry, atrVal, horizonKey),
+              shortLevels: computeLevels('SHORT', entry, atrVal, horizonKey),
+            });
+          }
+        } catch (e) { /* skip this coin, keep scanning */ }
+        doneCount++;
+        els.scanStatus.textContent = `scanning ${doneCount}/${top.length}...`;
+        if (pacingMs) await new Promise(r => setTimeout(r, pacingMs));
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(concurrency, top.length) }, worker));
+
+    const longRanked = [...results].sort((a, b) => b.longScore - a.longScore).slice(0, 20);
+    const shortRanked = [...results].sort((a, b) => b.shortScore - a.shortScore).slice(0, 20);
+    renderScanLists(longRanked, shortRanked);
+    els.scanStatus.textContent = `scanned ${top.length} ${EXCHANGES[exchangeKey].label} futures coins for the next ${horizonLabel} — updated ${new Date().toLocaleTimeString()}`;
+  } catch (e) {
+    els.scanStatus.textContent = `scan error: ${e.message || e}`;
+  } finally {
+    els.scanBtn.disabled = false;
+    els.scanStatusLine.classList.remove('loading');
+  }
+}
+
+function renderScanLists(longRanked, shortRanked) {
+  els.longCount.textContent = `top ${longRanked.length}`;
+  els.shortCount.textContent = `top ${shortRanked.length}`;
+  renderCoinList(els.longList, longRanked, 'long');
+  renderCoinList(els.shortList, shortRanked, 'short');
+}
+
+function renderCoinList(container, rows, side) {
+  container.innerHTML = '';
+  if (!rows.length) {
+    container.innerHTML = '<p style="color:var(--text-dimmer); font-size:12.5px; padding:14px 4px;">No candidates found — try scanning more coins.</p>';
+    return;
+  }
+  rows.forEach((r, idx) => {
+    const score = side === 'long' ? r.longScore : r.shortScore;
+    const levels = side === 'long' ? r.longLevels : r.shortLevels;
+    const row = document.createElement('div');
+    row.className = `coin-row ${side}`;
+    row.innerHTML = `
+      <span class="rank">#${idx + 1}</span>
+      <div class="coin-main">
+        <span class="coin-sym">${r.display}</span>
+        <span class="coin-levels">
+          <span>E ${fmt(levels.entryZone.low)}–${fmt(levels.entryZone.high)}</span>
+          <span>SL ${fmt(levels.stopLoss)}</span>
+          <span>TP ${fmt(levels.takeProfit)}</span>
+        </span>
+      </div>
+      <div class="coin-prob">
+        <span class="prob-pct">${score.toFixed(0)}%</span>
+        <div class="prob-bar-track"><div class="prob-bar-fill" style="width:${Math.min(100, score)}%"></div></div>
+      </div>
+      <button class="tracked-remove coin-fav-btn" title="Add to Favorites" style="font-size:15px;">${isFavorite(r.exchangeKey, r.id) ? '★' : '☆'}</button>
+      <button class="tracked-remove coin-track-btn" title="Track this coin" style="font-size:15px;">📌</button>
+    `;
+    row.querySelector('.coin-fav-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFavorite(r.exchangeKey, r.id, r.display);
+    });
+    row.querySelector('.coin-track-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      trackCoin({
+        exchangeKey: r.exchangeKey, id: r.id, display: r.display, horizonValue: r.horizonValue,
+        direction: side === 'long' ? 'LONG' : 'SHORT', score, levels,
+      });
+    });
+    row.addEventListener('click', () => {
+      els.symbolInput.value = r.display;
+      startWatching();
+      document.querySelector('.watch-grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    container.appendChild(row);
+  });
+}
+
+renderStrategyPerformance();
+renderPaperTrading();
+renderLearningLog();
+initChart();
+</script>
+</body>
+</html>
